@@ -23,11 +23,13 @@ public partial class LeadList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter)
     {
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
-
+            string role = System.Web.HttpContext.Current.Session["Role"].ToString();
+            string id = System.Web.HttpContext.Current.Session["ID"].ToString();
+          
             SqlDataAdapter da = new SqlDataAdapter("SP_MetaLead", con);
             da.SelectCommand.CommandType = CommandType.StoredProcedure;
             da.SelectCommand.Parameters.AddWithValue("@SP_Action", "LeadList");
@@ -35,6 +37,9 @@ public partial class LeadList : System.Web.UI.Page
             da.SelectCommand.Parameters.AddWithValue("@ShowRecords", pageSize);
             da.SelectCommand.Parameters.AddWithValue("@Status", statusFilter);
             da.SelectCommand.Parameters.AddWithValue("@AssignedFilter", assignedFilter);
+            da.SelectCommand.Parameters.AddWithValue("@Role", role);
+            da.SelectCommand.Parameters.AddWithValue("@Id", id);
+            da.SelectCommand.Parameters.AddWithValue("@DealerIds", string.IsNullOrEmpty(dealerFilter) ? (object)DBNull.Value : dealerFilter);
             DataTable dt = new DataTable();
             da.Fill(dt);
 
@@ -47,7 +52,7 @@ public partial class LeadList : System.Web.UI.Page
                 item["PersonalInfo"] = row["PersonalInfo"].ToString();
                 item["FormQuestion"] = row["FormQuestion"].ToString();
                 item["CreatedDate"] = row["CreatedDate"].ToString();
-                item["Status"] = row["Status"] == DBNull.Value ? "Cold" : row["Status"].ToString();
+                item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
                 item["AssignedTo"] = row["AssignedTo"] == DBNull.Value ? "" : row["AssignedTo"].ToString();
 
                 results.Add(item);
@@ -92,7 +97,7 @@ public partial class LeadList : System.Web.UI.Page
             using (SqlCommand cmd = new SqlCommand(
                 "UPDATE tbl_MetaLeads SET Status = @Status WHERE ID = @ID", con))
             {
-                cmd.Parameters.AddWithValue("@Status", status);
+                cmd.Parameters.AddWithValue("@Status", string.IsNullOrWhiteSpace(status) ? DBNull.Value : (Object)status);
                 cmd.Parameters.AddWithValue("@ID", leadId);
 
                 con.Open();
@@ -107,6 +112,12 @@ public partial class LeadList : System.Web.UI.Page
     [WebMethod]
     public static string AssignDealerToLead(string leadId, string dealerId, string reminder)
     {
+        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
+        if (role == "Dealer")
+        {
+            return "Access Denied";
+        }
+
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
             using (SqlCommand cmd = new SqlCommand(
@@ -177,22 +188,26 @@ public partial class LeadList : System.Web.UI.Page
 
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
+            string role = System.Web.HttpContext.Current.Session["Role"].ToString();
+            string id = System.Web.HttpContext.Current.Session["ID"].ToString();
+
             SqlCommand cmd = new SqlCommand(@"
             SELECT
-                CONVERT(varchar(20), CreatedDate, 106) + ' ' +
-                CONVERT(varchar(8), CreatedDate, 108) AS FollowDate,
+                CONVERT(varchar(20), CreatedDate, 105) AS FollowDate,
                 Feedback,
                 Status,
-                CONVERT(varchar(20), ReminderDate, 106) + ' ' +
-                CONVERT(varchar(8), ReminderDate, 108) AS NextReminder,
+                CONVERT(varchar(20), ReminderDate, 105) AS NextReminder,
                  UM.FullName AS UserName
             FROM tbl_MetaLeadFollowUp MF
             LEFT JOIN tbl_UserMaster UM
             ON UM.ID = MF.CreatedBy
             WHERE LeadId = @LeadId
+            AND (@Role <> 'Dealer' OR MF.CreatedBy = @ID)
             ORDER BY CreatedDate DESC", con);
 
             cmd.Parameters.AddWithValue("@LeadId", leadId);
+            cmd.Parameters.AddWithValue("@Role", role);
+            cmd.Parameters.AddWithValue("@ID", id);
 
             SqlDataAdapter da = new SqlDataAdapter(cmd);
             da.Fill(dt);

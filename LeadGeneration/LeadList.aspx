@@ -1,4 +1,4 @@
-<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="LeadList.aspx.cs" Inherits="LeadList" %>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="LeadList.aspx.cs" Inherits="LeadList" %>
 
 
 <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
@@ -141,15 +141,16 @@
 
         /* ===== Status Badges (pill-style) ===== */
         .ddl-status {
-            border-radius: 20px !important;
+            border-radius: 26px !important;
             text-align: center;
             text-align-last: center;
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 0.3px;
-            padding: 6px 12px !important;
+            padding: 7px 11px !important;
             height: auto !important;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            width: 122px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
         .status-cold {
@@ -170,6 +171,13 @@
             background-color: #ffe0e3 !important;
             color: #c21f2e !important;
             border: 1.5px solid #f5a8ae !important;
+            font-weight: 700;
+        }
+
+        .status-blank {
+            background-color: #f1f3f5 !important;
+            color: #495057 !important;
+            border: 1.5px solid #dee2e6 !important;
             font-weight: 700;
         }
 
@@ -208,9 +216,17 @@
                 color: #000000 !important;
             }
 
+        /* Center placeholder text */
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            text-align: center;
+            display: block;
+            width: 100%;
+        }
+
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: 40px;
             color: #495057;
+            text-align: center;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
@@ -280,6 +296,100 @@
                 #historyDiv::-webkit-scrollbar-thumb:hover {
                     background: #888;
                 }
+
+        .role-hidden {
+            display: none !important;
+        }
+
+
+        /* Hide default inline tags inside the select box itself */
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            display: none !important;
+        }
+
+        /* Keep the box looking like a normal input with just the search/placeholder */
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 8px !important;
+            height: 42px !important;
+            padding: 0 8px;
+            background: #ffffff !important;
+            display: flex;
+            align-items: center;
+        }
+
+        .select2-container--default .select2-search--inline {
+            width: 100%;
+        }
+
+            .select2-container--default .select2-search--inline .select2-search__field {
+                width: 100% !important;
+                height: 40px;
+                font-size: 16px;
+                text-align: center;
+                margin: 0;
+            }
+
+        /* Show a check style on already-selected options in the open dropdown */
+        .select2-results__option[aria-selected="true"] {
+            background-color: #e7f1ff !important;
+            color: #0a58ca !important;
+            font-weight: 600;
+        }
+
+            .select2-results__option[aria-selected="true"]::after {
+                content: " ✓";
+                color: #0a58ca;
+            }
+
+        /* ===== Badge grid BELOW the select box, 3 per row ===== */
+        .dealer-badge-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .dealer-badge {
+            background-color: #e7f1ff;
+            border: 1px solid #a8caff;
+            border-radius: 6px;
+            color: #0a58ca;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+            .dealer-badge span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .dealer-badge .dealer-badge-remove {
+                cursor: pointer;
+                font-weight: bold;
+                color: #0a58ca;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+
+                .dealer-badge .dealer-badge-remove:hover {
+                    color: #c21f2e;
+                }
+
+        @media (max-width: 576px) {
+            .dealer-badge-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
 
 
         /* ===== Responsive rules (kept from before, lightly adjusted) ===== */
@@ -359,6 +469,7 @@
         }
     </style>
     <script type="text/javascript">
+        var currentUserRole = "<%= System.Web.HttpContext.Current.Session["Role"] != null ? System.Web.HttpContext.Current.Session["Role"].ToString() : "" %>";
         var dealersList = [];
 
         function loadDealers(callback) {
@@ -371,6 +482,13 @@
         }
 
         function renderLeadsTable(leads) {
+            // destroy existing select2 widgets so their body-appended dropdowns don't leak
+            $(".ddl-dealer").each(function () {
+                if ($(this).hasClass("select2-hidden-accessible")) {
+                    $(this).select2("destroy");
+                }
+            });
+
             var tbody = $("#leadsTableBody");
             tbody.empty();
 
@@ -383,15 +501,30 @@
                 var personalHtml = formatKeyValueJson(lead.PersonalInfo);
                 var otherHtml = formatOtherDetailsJson(lead.FormQuestion);
 
-                var statusClass = "status-cold";
+                var statusClass = "status-blank";
+                if (lead.Status === "Cold") statusClass = "status-cold";
                 if (lead.Status === "Warm") statusClass = "status-warm";
                 if (lead.Status === "Hot") statusClass = "status-hot";
 
-                var dealerOptions = '<option value="">-- Select Dealer --</option>';
-                dealersList.forEach(function (dealer) {
-                    var selected = (dealer.ID === lead.AssignedTo) ? "selected" : "";
-                    dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
-                });
+                var assignCellHtml;
+
+                if (currentUserRole === "Dealer") {
+                    // Dealer: read-only, just show the assigned dealer's name as plain text
+                    var assignedDealer = dealersList.find(function (d) { return d.ID === lead.AssignedTo; });
+                    var dealerName = assignedDealer ? escapeHtml(assignedDealer.DealerName) : "-";
+                    assignCellHtml = '<span class="fw-bold">' + dealerName + '</span>';
+                } else {
+                    // Admin/other roles: full editable Select2 dropdown
+                    var dealerOptions = '<option value="">-- Select Dealer --</option>';
+                    dealersList.forEach(function (dealer) {
+                        var selected = (dealer.ID === lead.AssignedTo) ? "selected" : "";
+                        dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
+                    });
+                    assignCellHtml =
+                        '<select class="form-control ddl-dealer" data-lead-id="' + lead.ID + '">' +
+                        dealerOptions +
+                        '</select>';
+                }
 
                 var row =
                     '<tr>' +
@@ -401,22 +534,21 @@
                     '<td class="col-other" data-label="Other Info"><div class="scroll-box">' + otherHtml + '</div></td>' +
                     '<td data-label="Status" style="text-align:center;">' +
                     '<select class="form-control ddl-status ' + statusClass + '" data-lead-id="' + lead.ID + '" onchange="UpdateLeadStatus(this);">' +
+                    '<option value="" ' + (lead.Status === "" ? "selected" : "") + '>Select Status</option>' +
                     '<option value="Cold" ' + (lead.Status === "Cold" ? "selected" : "") + '>Cold</option>' +
                     '<option value="Warm" ' + (lead.Status === "Warm" ? "selected" : "") + '>Warm</option>' +
                     '<option value="Hot" ' + (lead.Status === "Hot" ? "selected" : "") + '>Hot</option>' +
                     '</select>' +
                     '</td>' +
                     '<td class="col-assign" data-label="Assign Lead" style="text-align:center;">' +
-                    '<select class="form-control ddl-dealer" data-lead-id="' + lead.ID + '">' +
-                    dealerOptions +
-                    '</select>' +
+                    assignCellHtml +
                     '</td>' +
                     '<td style="text-align:center;">' +
                     '<button type="button" class="btn btn-primary btn-sm" onclick="OpenFollowUp(' + lead.ID + ')">' +
                     '<i class="fa fa-phone"></i> Follow Up' +
                     '</button>' +
-                    '</td>'
-                '</tr>';
+                    '</td>' +
+                    '</tr>';
 
                 tbody.append(row);
             });
@@ -449,11 +581,12 @@
         }
 
         function ChangeStatusColor(ctrl) {
-            ctrl.classList.remove("status-cold", "status-warm", "status-hot");
+            ctrl.classList.remove("status-cold", "status-warm", "status-hot", "status-blank");
             switch (ctrl.value) {
                 case "Cold": ctrl.classList.add("status-cold"); break;
                 case "Warm": ctrl.classList.add("status-warm"); break;
                 case "Hot": ctrl.classList.add("status-hot"); break;
+                default: ctrl.classList.add("status-blank"); break;
             }
         }
 
@@ -504,7 +637,6 @@
                     $("#assignDealerModal").modal("hide");
 
                     searchLeads();
-
                 },
 
                 function (err) {
@@ -515,7 +647,71 @@
 
         }
 
+        function initDealerFilterDropdown() {
+            if (currentUserRole === "Dealer") return;
+
+            var $ddl = $("#ddlDealerFilter");
+            var previousSelection = $ddl.val() || [];
+
+            if ($ddl.hasClass("select2-hidden-accessible")) {
+                $ddl.select2("destroy");
+            }
+
+            $ddl.empty();
+
+            dealersList.forEach(function (dealer) {
+                var selected = previousSelection.indexOf(dealer.ID) > -1 ? "selected" : "";
+                $ddl.append('<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>');
+            });
+
+            $ddl.select2({
+                width: '100%',
+                placeholder: "Search dealers...",
+                allowClear: true,
+                closeOnSelect: true,
+                dropdownAutoWidth: false
+            });
+
+            $ddl.off("change.dealerFilter").on("change.dealerFilter", function () {
+                renderDealerBadges();
+                searchLeads();
+            });
+
+            renderDealerBadges(); // show badges for the preserved selection right away
+        }
+
+        function renderDealerBadges() {
+            var $ddl = $("#ddlDealerFilter");
+            var $container = $("#selectedDealerBadges");
+            $container.empty();
+
+            var selectedIds = $ddl.val() || [];
+
+            selectedIds.forEach(function (id) {
+                var dealer = dealersList.find(function (d) { return d.ID === id; });
+                if (!dealer) return;
+
+                var $badge = $(
+                    '<div class="dealer-badge" data-id="' + id + '">' +
+                    '<span title="' + escapeHtml(dealer.DealerName) + '">' + escapeHtml(dealer.DealerName) + '</span>' +
+                    '<span class="dealer-badge-remove" data-id="' + id + '">&times;</span>' +
+                    '</div>'
+                );
+                $container.append($badge);
+            });
+        }
+
+        $(document).on("click", ".dealer-badge-remove", function () {
+            var idToRemove = $(this).data("id").toString();
+            var $ddl = $("#ddlDealerFilter");
+            var current = $ddl.val() || [];
+            var updated = current.filter(function (id) { return id !== idToRemove; });
+
+            $ddl.val(updated).trigger("change.select2").trigger("change");
+        });
+
         function initDealerDropdowns() {
+
             $(".ddl-dealer").each(function () {
                 if (!$(this).hasClass("select2-hidden-accessible")) {
                     $(this).select2({
@@ -533,7 +729,13 @@
             var statusFilter = $("#ddlStatusFilter").val();
             var assignedFilter = $("#ddlAssignedFilter").val();
 
-            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, function (result) {
+            var dealerFilter = "";
+            if (currentUserRole !== "Dealer") {
+                var selectedDealers = $("#ddlDealerFilter").val(); // array or null
+                dealerFilter = selectedDealers ? selectedDealers.join(",") : "";
+            }
+
+            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, function (result) {
                 renderLeadsTable(JSON.parse(result));
             }, function (error) {
                 console.error("Search failed: " + error.get_message());
@@ -545,6 +747,12 @@
             $("#ddlStatusFilter").val("");
             $("#ddlAssignedFilter").val("Not Assigned");
             $("#ddlPageSize").val("25");
+
+            if (currentUserRole !== "Dealer" && $("#ddlDealerFilter").hasClass("select2-hidden-accessible")) {
+                $("#ddlDealerFilter").val(null).trigger("change.select2").trigger("change");
+                // triggers "change.dealerFilter" above, which calls renderDealerBadges() + searchLeads()
+            }
+
             searchLeads();
         }
 
@@ -555,7 +763,15 @@
         }
 
         $(document).ready(function () {
+
+            if (currentUserRole === "Dealer") {
+                $("#ddlAssignedFilter").val("Assigned").prop("disabled", true);
+                $("#rolewiseView").addClass("role-hidden");
+                $("#dealerFilterWrapper").addClass("role-hidden");
+            }
+
             loadDealers(function () {
+                initDealerFilterDropdown();
                 searchLeads(); // initial load
             });
 
@@ -582,9 +798,10 @@
 
                     success: function (response) {
                         $("#syncStatus").html("<span class='text-success'>" + response.d + "</span>");
-                        setTimeout(function () {
-                            window.location.reload();
-                        }, 2000);
+                        loadDealers(function () {
+                            initDealerFilterDropdown();
+                            searchLeads();   // refresh data without navigating away
+                        });
                     },
 
                     error: function (xhr) {
@@ -777,7 +994,7 @@
                         <b>Meta Lead List</b>
                     </h3>
 
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center" id="rolewiseView">
 
                         <span id="syncStatus" class="me-3 text-success fw-bold"></span>
 
@@ -791,12 +1008,12 @@
                 <div class="card-body">
                     <div class="filter-bar">
                         <div class="row align-items-end">
-                            <div class="col-12 mb-2 mb-md-0 col-md-3">
+                            <div class="col-12 mb-2 mb-md-0 col-md-2">
                                 <label class="form-label fw-bold">Search</label>
                                 <input type="text" id="txtcompanyname" class="form-control" placeholder="Search by name, email..." autocomplete="off" />
                             </div>
 
-                            <div class="col-12 col-md-2 mb-2 mb-md-0">
+                            <div class="col-12 col-md-1 mb-2 mb-md-0">
                                 <label class="form-label fw-bold">Status</label>
                                 <select id="ddlStatusFilter" class="form-control">
                                     <option value="">All</option>
@@ -805,6 +1022,7 @@
                                     <option value="Hot">Hot</option>
                                 </select>
                             </div>
+
                             <div class="col-12 col-md-2 mb-2 mb-md-0">
                                 <label class="form-label fw-bold">Assigned/Not Assigned</label>
                                 <select id="ddlAssignedFilter" class="form-control">
@@ -814,8 +1032,13 @@
                                 </select>
                             </div>
 
+                            <div class="col-12 col-md-3 mb-2 mb-md-0" id="dealerFilterWrapper">
+                                <label class="form-label fw-bold">Dealer</label>
+                                <select id="ddlDealerFilter" class="form-control" multiple="multiple">
+                                </select>
+                            </div>
 
-                            <div class="col-12 col-md-2 mb-2 mb-md-0 d-flex align-items-end">
+                            <div class="col-12 col-md-1 mb-2 mb-md-0 d-flex align-items-end">
                                 <button type="button" id="btnRefresh" class="btn btn-outline-danger" onclick="clearFilters();" title="Reset filters">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
@@ -832,6 +1055,9 @@
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                        <div class="row align-items-center">
+                            <div id="selectedDealerBadges" class="dealer-badge-grid"></div>
                         </div>
                     </div>
 
@@ -855,18 +1081,15 @@
                     <div class="modal fade" id="followUpModal" tabindex="-1">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
-
                                 <div class="modal-header bg-primary text-white">
                                     <h5 class="modal-title">
                                         <i class="fa fa-phone"></i>Lead Follow Up
                                     </h5>
-
                                     <button type="button"
                                         class="btn-close btn-close-white"
                                         data-bs-dismiss="modal">
                                     </button>
                                 </div>
-
                                 <div class="modal-body">
 
                                     <input type="hidden" id="hdLeadId" />
@@ -973,11 +1196,9 @@
                                     </div>
 
                                 </div>
-
                             </div>
                         </div>
                     </div>
-
 
                     <div class="modal fade" id="assignDealerModal" tabindex="-1">
                         <div class="modal-dialog">
@@ -990,7 +1211,7 @@
                                     </h5>
                                     <button type="button"
                                         class="btn-close btn-close-white"
-                                        data-bs-dismiss="modal">
+                                        data-dismiss="modal" data-bs-dismiss="modal">
                                     </button>
                                 </div>
 
@@ -1009,18 +1230,11 @@
 
                                 <div class="modal-footer">
 
-                                    <button class="btn btn-secondary"
-                                        data-dismiss="modal">
-                                        Cancel
-                                    </button>
-
                                     <button class="btn btn-success"
                                         onclick="SaveDealerAssignment();">
                                         Assign Dealer
                                     </button>
-
                                 </div>
-
                             </div>
                         </div>
                     </div>
