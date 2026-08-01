@@ -1,0 +1,1512 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" EnableEventValidation="false" Async="true" CodeFile="WorkOrderMaster.aspx.cs" Inherits="WorkOrderMaster" MasterPageFile="~/MasterPage.master" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <style type="text/css">
+        /* ===== FULL SCREEN LOADER ===== */
+        #pageLoader {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== SPINNER ===== */
+        .loader-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #4f7cff;
+            border-right: 4px solid #7c4dff;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 25px rgba(79,124,255,0.6);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* glow text */
+        .loader-text {
+            margin-top: 15px;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-align: center;
+            font-size: 14px;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .spncls {
+            color: red;
+        }
+
+        .completionList {
+            scroll-behavior: smooth;
+            border: solid 1px Gray;
+            border-radius: 0 0 6px 6px;
+            margin: 0px;
+            padding: 3px;
+            height: 200px;
+            overflow: auto;
+            width: 500px;
+            background-color: #FFFFFF;
+            font-size: 16px;
+        }
+
+        .listItem {
+            color: #191919;
+        }
+
+        .itemHighlighted {
+            background-color: #5b78b1;
+            font-weight: 900;
+        }
+
+        .error-border {
+            border: 2px solid red !important;
+        }
+
+        .error-msg {
+            min-height: 14px;
+            margin-top: 2px;
+        }
+
+
+        .highlight-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .highlight-checkbox input[type="checkbox"] {
+                width: 17px;
+                height: 17px;
+                accent-color: #28a745; /* Green checkbox */
+                cursor: pointer;
+                justify-items: center;
+                align-items: baseline;
+            }
+
+            .highlight-checkbox label {
+                font-size: 12px;
+                font-weight: bold;
+                color: #198754;
+                background-color: #d1e7dd;
+                padding: 1px 5px;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+
+
+        /* Autocomplete dropdown */
+        .ui-autocomplete {
+            max-height: 250px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 999999 !important;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 6px 20px rgba(0,0,0,.15);
+            padding: 5px 0;
+            font-size: 14px;
+            /* Important */
+            max-width: 95vw !important;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        .ui-menu-item-wrapper {
+            padding: 10px 15px;
+            white-space: normal !important;
+            word-break: break-word;
+        }
+        /* Each item */
+        .ui-menu-item {
+            padding: 0;
+        }
+
+        /* Hover / selected */
+        .ui-state-active,
+        .ui-menu-item-wrapper.ui-state-active {
+            background: #5b78b1 !important;
+            border: none !important;
+            color: #fff !important;
+            margin: 0 !important;
+        }
+
+        /* Hover effect */
+        .ui-menu-item-wrapper:hover {
+            background: #f5f7fb;
+        }
+
+        /* Custom scrollbar */
+        .ui-autocomplete::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .ui-autocomplete::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .ui-autocomplete::-webkit-scrollbar-thumb {
+            background: #5b78b1;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+
+            .ui-autocomplete {
+                max-width: 95vw !important;
+                width: 95vw !important;
+                left: 10px !important;
+                right: 10px !important;
+                font-size: 13px;
+                max-height: 200px;
+            }
+
+            .ui-menu-item-wrapper {
+                padding: 12px;
+                line-height: 1.4;
+            }
+        }
+
+        .size.locked {
+            pointer-events: none;
+            background-color: #e9ecef;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+        $(document).on('focus', '.productname', function () {
+            var $input = $(this);
+            bindProductAutocomplete($input);
+        });
+
+        function bindProductAutocomplete($input) {
+            if ($input.data('ui-autocomplete')) return;
+
+            $input.autocomplete({
+                minLength: 1,
+                appendTo: "body",
+                position: {
+                    my: "left top",
+                    at: "left bottom",
+                    collision: "flipfit"
+                },
+                source: function (request, response) {
+                    $.ajax({
+                        url: 'WorkOrderMaster.aspx/GetProductAutoComplete',
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json',
+                        data: JSON.stringify({ prefixText: request.term }),
+                        success: function (data) {
+                            let result = data.d || [];
+                            response($.map(result, function (item) {
+                                return {
+                                    label: item.ProductName,
+                                    value: item.ProductName,
+                                    id: item.ProductId,
+                                    size: item.Size,
+                                    imagename: item.ImagenamePath && item.ImagenamePath.trim() !== 'null'
+                                        ? item.ImagenamePath.replace('~/', '/Content/')
+                                        : 'https://placehold.co/100x100?text=Image'
+                                };
+                            }));
+                        }
+                    });
+                },
+                select: function (event, ui) {
+                    var row = $(this).closest('tr');
+                    row.find('input[name="ProductId[]"]').val(ui.item.id);
+                    row.find('textarea[name="ProductName[]"]').val(ui.item.value);
+                    row.find('select[name="Size[]"]').val(ui.item.size);
+
+                    // Update image preview
+                    row.find('.product-image-preview').attr('src', ui.item.imagename);
+
+                    // Store image path in hidden field
+                    row.find('input[name="ProdImageName[]"]').val(ui.item.imagename);
+
+                    var lastRow = $('#tblRawMaterial tbody tr:last')[0];
+                    toggleSize(lastRow.querySelector('.typo'));
+                    return false;
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            updateSerialNumbers();
+
+            // ADD NEW ROW
+            $(document).on('click', '.btnAdd', function () {
+                var lastRow = $('#tblRawMaterial tbody tr:last');
+                if (!validateRow(lastRow)) return;
+
+                // Get values from last row
+                var productName = lastRow.find('[name="ProductName[]"]').val().trim();
+                var size = lastRow.find('[name="Size[]"]').val();
+
+                if (productName && productName.trim() !== '') {
+                    SaveProductMaster(productName, size);
+                }
+
+                // Convert current add button to delete
+                $(this)
+                    .removeClass('btnAdd')
+                    .addClass('btnDelete')
+                    .attr('style', 'border:none!important;background:none!important')
+                    .html('<i class="bi bi-trash-fill" style="color:red;font-size:23px"></i>');
+                $(this).siblings(".btnRemove").hide();
+
+                // Create new row
+                var newRow =
+                    `  <tr style="transition: 0.3s;">
+                <!-- Sr No -->
+                 <td class="srno text-center"
+                     style="border: 1px solid #e3e6f0; padding: 10px; font-weight: 600;">1
+                 </td>
+
+                 <!-- Product Name -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <textarea type="text"
+                         name="ProductName[]"
+                         autocomplete="off"
+                         class="form-control productname"
+                         style="border-radius: 8px; height: 42px; min-width: 250px;" ></textarea>
+                     <div class="error-msg productname-error text-danger" style="font-size: 12px;"></div>
+                     <input type="hidden" name="ProductId[]" class="productid" />
+                 </td>
+
+             
+                    <!-- Type -->
+                   <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                       <select name="Type[]" onchange="toggleSize(this)"
+                           class="form-control typo"
+                           style="border-radius: 8px; min-width: 120px; resize: none;" >
+                           <option value="Regular" selected>Regular</option>
+                           <option value="Custom">Custom</option>
+                       </select>
+                       <div class="error-msg typo-error text-danger" style="font-size: 12px;"></div>
+                   </td>
+
+                 <!-- Description -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <textarea
+                         name="Description[]" autocomplete="off"
+                         class="form-control description"
+                         style="border-radius: 8px; height: 42px; min-width: 200px;" ></textarea>
+                     <div class="error-msg description-error text-danger" style="font-size: 12px;"></div>
+                 </td>
+
+                 <!-- Size -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <select name="Size[]"
+                         class="form-control size" 
+                         style="border-radius: 8px; height: 42px; min-width: 120px;" onchange="GetSQFeet(this)">
+                         <option value="">-Select Size-</option>
+                         <option value="8x2">8x2</option>
+                         <option value="8x4">8x4</option>
+                     </select>
+                     <div class="error-msg size-error text-danger" style="font-size: 12px;"></div>
+                 </td>
+
+                 <!-- Qty -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <input type="number"
+                         min="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                         name="Qty[]"
+                         class="form-control qty"
+                         style="border-radius: 8px; height: 42px; min-width: 70px;" oninput=" if(this.value==0) this.value=1; GetSQFeet(this)"/>
+                     <div class="error-msg qty-error text-danger" style="font-size: 12px;"></div>
+                 </td>
+
+                  <!-- Sq Feet -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <input type="text" name="SqFeet[]" readonly="readonly" class="form-control sqfeet"
+                         style="border-radius: 8px; height: 42px; min-width: 60px;" />
+                     <div class="error-msg sqfeet-error text-danger" style="font-size: 12px;"></div>
+                 </td>
+
+                 <!-- Unit -->
+                 <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                     <input type="text" name="Unit[]" value="NOS" readonly="readonly" class="form-control unit"
+                         style="border-radius: 8px; height: 42px; min-width: 70px;" />
+                     <div class="error-msg unit-error text-danger" style="font-size: 12px;"></div>
+                 </td>
+
+                   <!-- Upload Image -->
+                  <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                      <div class="position-relative d-inline-block">
+
+                          <img src="https://placehold.co/100x100?text=Image"
+                              class="product-image-preview"
+                              style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;" />
+
+                          <a href="javascript:void(0);"
+                              class="upload-btn position-absolute bottom-0 end-0 rounded-circle text-white border border-white shadow"
+                              style="background:rgb(89 118 175); width: 27px;height: 26px;display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;">
+                              <i class="bi bi-camera"></i>
+                          </a>
+
+                          <input type="file"
+                              name="ProductImage[]"
+                              class="file-input"
+                              accept="image/*"
+                              style="display: none;" />
+
+                              <input type="hidden" name="ProdImageName[]" class="product-file-input" />
+                      </div>
+
+
+                      <div class="error-msg productimage-error text-danger"
+                          style="font-size: 12px;">
+                      </div>
+                  </td>
+
+                <!-- Action -->
+                <td class="text-center" style="border:1px solid #e3e6f0;padding:8px;">
+                    <button type="button" class="btnAdd" style="border:none;background:none;cursor:pointer;">
+                        <i class="bi bi-plus-square-fill" style="color:#16a34a;font-size:26px;"></i>
+                    </button>
+
+                    <button type="button" class="btnRemove" style="border:none;background:none;cursor:pointer;margin-left:5px;">
+                        <i class="bi bi-dash-square-fill" style="color:red;font-size:26px;"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+                $('#tblRawMaterial tbody').append(newRow);
+                bindProductAutocomplete($('#tblRawMaterial tbody tr:last .productname'));
+
+                updateSerialNumbers();
+            });
+
+            $(document).on("click", ".btnRemove", function () {
+                debugger;
+                var currentRow = $(this).closest("tr");
+                var previousRow = currentRow.prev("tr");
+
+                currentRow.remove();
+
+                // Make previous row's Add/Remove buttons visible if needed
+                if (previousRow.length) {
+
+                    var btn = previousRow.find(".btnDelete");
+                    btn.removeClass('btnDelete')
+                        .addClass('btnAdd')
+                        .attr('style', 'border:none;background:none;cursor:pointer;')
+                        .html(' <i class="bi bi-plus-square-fill" style="color:#16a34a;font-size:26px;"></i>');
+                }
+
+                updateSerialNumbers();
+            });
+
+
+            // DELETE ROW
+            $(document).on('click', '.btnDelete', function () {
+                $(this).closest('tr').remove();
+                updateSerialNumbers();
+
+            });
+
+            function SaveProductMaster(productName, size) {
+                $.ajax({
+                    type: "POST",
+                    url: "WorkOrderMaster.aspx/SaveProductMaster",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify({
+                        ProductName: productName,
+                        Size: size
+                    }),
+                    success: function (response) {
+
+                        if (response.d === "Success") {
+                            alert("New Product Created");
+                        }
+                    },
+                    error: function (xhr) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+
+        });
+
+        // SERIAL NUMBER FUNCTION
+        function updateSerialNumbers() {
+            $('#tblRawMaterial tbody tr').each(function (index) {
+                $(this).find('.srno').text(index + 1);
+            });
+        }
+
+        // VALIDATE ROW
+        function validateRow(row) {
+            let isValid = true;
+
+            row.find('.error-msg').text('');
+            row.find('select,textarea').removeClass('error-border');
+
+            const fields = [
+                { selector: '[name="ProductName[]"]', msg: 'Product Name is required' },
+                { selector: '[name="Size[]"]', msg: 'Size is required' },
+                { selector: '.qty', msg: 'Enter valid Qty' }
+            ];
+
+            // Validate common fields
+            fields.forEach(f => {
+                let el = row.find(f.selector);
+
+                if (el.val() === '' || (el.hasClass('qty') && parseFloat(el.val()) <= 0)) {
+                    el.addClass('error-border');
+                    el.next('.error-msg').text(f.msg);
+                    isValid = false;
+                }
+            });
+
+            // Validate Description only when Type = Custom
+            let type = row.find('[name="Type[]"]').val();
+
+            if (type === "Custom") {
+                let desc = row.find('[name="Description[]"]');
+
+                if ($.trim(desc.val()) === '') {
+                    desc.addClass('error-border');
+                    desc.next('.error-msg').text('Description is required');
+                    isValid = false;
+                }
+
+                // NEW: Image required for Custom type
+                if (!rowHasImage(row)) {
+                    row.find('.productimage-error').text('Image is required for Custom type');
+                    isValid = false;
+                } else {
+                    row.find('.productimage-error').text('');
+                }
+            }
+
+            return isValid;
+        }
+
+        function rowHasImage(row) {
+            var fileInput = row.find('.file-input')[0];
+            //var hiddenVal = row.find('.product-file-input').val();
+            // var imgSrc = row.find('.product-image-preview').attr('src');
+
+            var fileSelected = fileInput && fileInput.files && fileInput.files.length > 0;
+            // var hiddenHasPath = hiddenVal && hiddenVal.trim() !== '' && hiddenVal.trim().toLowerCase() !== 'null';
+            // var imgNotPlaceholder = imgSrc && imgSrc.indexOf('placehold.co') === -1;
+
+            return fileSelected;//|| hiddenHasPath || imgNotPlaceholder;
+        }
+
+        function DealerSelected(source, eventArgs) {
+            var dealerId = eventArgs.get_value();
+            document.getElementById('<%= hdnDealerId.ClientID %>').value = dealerId;
+            $.ajax({
+                type: "POST",
+                url: "WorkOrderMaster.aspx/GetDealersInfo",
+                data: JSON.stringify({ dealerId: dealerId }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                    var BillingAddress = $("#<%= txtBillingAddress.ClientID %>");
+                    var BillGst = $("#<%= txtBillGst.ClientID %>");
+                    var BillPinCode = $("#<%= txtBillPinCode.ClientID %>");
+
+                    BillingAddress.val(response.d[0]);
+                    BillPinCode.val(response.d[1]);
+                    BillGst.val(response.d[2]);
+                },
+                error: function (xhr) {
+                    //console.log(xhr.responseText);
+                }
+            });
+        }
+
+        function CompanyData(source, eventArgs) {
+            var companyId = eventArgs.get_value();
+            $.ajax({
+                type: "POST",
+                url: "WorkOrderMaster.aspx/GetShippingAddresses",
+                data: JSON.stringify({ companyId: companyId }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+
+                    var ShipAddress = $("#<%= txtShipAddress.ClientID %>");
+                    var ShipGst = $("#<%= txtShipGst.ClientID %>");
+                    var ShipPinCode = $("#<%= txtShipPinCode.ClientID %>");
+
+                    ShipAddress.val(response.d[0]);
+                    ShipPinCode.val(response.d[1]);
+                    ShipGst.val(response.d[2]);
+                },
+                error: function (xhr) {
+                    //console.log(xhr.responseText);
+                }
+            });
+        }
+
+        $(document).on('change', '#check_address', function () {
+            if ($(this).is(':checked')) {
+                var DealerId = $("#<%= hdnDealerId.ClientID %>").val();
+                var DealerName = $("#<%= txtDealerName.ClientID %>").val();
+                if (DealerId == "")
+                    return;
+
+                $.ajax({
+                    type: "POST",
+                    url: "WorkOrderMaster.aspx/GetDealersInfo",
+                    data: JSON.stringify({ dealerId: DealerId }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (response) {
+
+                        if (response.d.length > 0) {
+
+                            $("#<%= txtCustName.ClientID %>").val(DealerName);
+                            $("#<%= txtShipAddress.ClientID %>").val(response.d[3]);
+                            $("#<%= txtShipPinCode.ClientID %>").val(response.d[4]);
+                            $("#<%= txtShipGst.ClientID %>").val(response.d[2]);
+
+                            $("#<%= txtCustName.ClientID %>").prop('readonly', true);
+                            $("#<%= txtShipAddress.ClientID %>").prop('readonly', true);
+                            $("#<%= txtShipPinCode.ClientID %>").prop('readonly', true);
+                            $("#<%= txtShipGst.ClientID %>").prop('readonly', true);
+                        }
+                    },
+                    error: function (xhr) {
+                        console.log(xhr.responseText);
+                    }
+                });
+            } else {
+
+                $("#<%= txtCustName.ClientID %>").val('');
+                $("#<%= txtShipAddress.ClientID %>").val('');
+                $("#<%= txtShipPinCode.ClientID %>").val('');
+                $("#<%= txtShipGst.ClientID %>").val('');
+
+                $("#<%= txtCustName.ClientID %>").prop('readonly', false);
+                $("#<%= txtShipAddress.ClientID %>").prop('readonly', false);
+                $("#<%= txtShipPinCode.ClientID %>").prop('readonly', false);
+                $("#<%= txtShipGst.ClientID %>").prop('readonly', false);
+
+            }
+        });
+
+        function loadWorkOrderData(data) {
+            $('#tblRawMaterial tbody').html('');
+            $('#check_address').prop('disabled', true);
+            $.each(data, function (index, item) {
+
+                var btnHtml = '';
+
+                if (index == data.length - 1) {
+                    btnHtml =
+                        '<button type="button" class="btnAdd" style="border:none;background:none;cursor:pointer;">' +
+                        '<i class="bi bi-plus-square-fill" style="color:#16a34a;font-size:26px"></i>' +
+                        '</button>' +
+                        '<button type="button" class="btnRemove" style="border:none;background:none;cursor:pointer;margin-left:5px;">' +
+                        '<i class="bi bi-dash-square-fill" style="color:red;font-size:26px;"></i>' +
+                        '</button>';
+                }
+                else {
+                    btnHtml =
+                        '<button type="button" class="btnDelete" style="border: none; background: none; cursor: pointer;">' +
+                        '<i class="bi bi-trash-fill" style="color:red;font-size:23px"></i>' +
+                        '</button>';
+                }
+
+                var row = '';
+
+                row += '<tr style="transition: 0.3s;">';
+
+                row += '<td class="srno text-center"  style="border:1px solid #e3e6f0;padding: 10px;font-weight: 600;">' + (index + 1) + '</td>';
+
+                // Product Name
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea type = "text" name = "ProductName[]" autocomplete = "off" ' +
+                    'class="form-control productname" ' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 250px;" >' + item.ProductName + '</textarea>' +
+                    '<div class="error-msg productname-error text-danger" style="font-size: 12px;"></div>' +
+                    '<input type="hidden" name="ProductId[]" class="productid" value="' + item.ProductId + '"/></td>';
+
+
+                //Type 
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<select name="Type[]" onchange="toggleSize(this)"' +
+                    'class="form-control typo" ' +
+                    'style="border-radius: 8px; min-width: 120px; resize: none;" >' +
+                    '<option value="Regular" ' + (item.Type == 'Regular' ? ' selected' : '') + '>Regular</option>' +
+                    '<option value="Custom"' + (item.Type == 'Custom' ? ' selected' : '') + '>Custom</option>' +
+                    '</select>' +
+                    '<div class="error-msg typo-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Description
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea name="Description[]" autocomplete="off" ' +
+                    'class="form-control description"' +
+                    'style="border-radius: 8px; height: 42px; min-width: 200px;">' +
+                    item.Description +
+                    '</textarea>' +
+                    ' <div class="error-msg description-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Size
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">';
+                row += '<select name="Size[]" class="form-control size"' +
+                    'style="border-radius: 8px; height: 42px; min-width: 120px;"  onchange="GetSQFeet(this)">';
+                row += '<option value="">-Select Size-</option>';
+                row += ' <option value="8x2"' + (item.Size == '8x2' ? ' selected' : '') + '>8x2</option>';
+                row += '  <option value="8x4"' + (item.Size == '8x4' ? ' selected' : '') + '>8x4</option>';
+                row += '</select>';
+                row += ' <div class="error-msg size-error text-danger" style="font-size: 12px;"></div>';
+                row += '</td>';
+
+
+                //Qty
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="number"  min="1" name="Qty[]" ' +
+                    'class="form-control qty" onkeypress="return event.charCode >= 48 && event.charCode <= 57" ' +
+                    'value="' + item.Qty + '" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;" oninput=" if(this.value==0) this.value=1; GetSQFeet(this)"/>' +
+                    '<div class="error-msg qty-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Sq Feet
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" >' +
+                    '<input type="text" name="SqFeet[]" readonly="readonly" value="' + item.SqFeet + '" class="form-control sqfeet"' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 60px;" /> ' +
+                    '<div class="error-msg sqfeet-error text-danger" style = "font-size: 12px;" ></div > ' +
+                    '</td >';
+
+                //Unit
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="text" name="Unit[]" value="NOS" readonly="readonly" class="form-control unit" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;"/>' +
+                    ' <div class="error-msg unit-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                const imageUrl = item.UploadedImage && item.UploadedImage.trim() !== 'null'
+                    ? item.UploadedImage.replace('~/', '/Content/')
+                    : 'https://placehold.co/100x100?text=Image';
+
+
+                // '<img src="https://placehold.co/100x100?text=Image"' +
+                //Upload image
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" > ' +
+                    '<div class="position-relative d-inline-block">' +
+
+                    `<img src="${imageUrl}" ` +
+                    'class="product-image-preview" ' +
+                    'style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;" />' +
+
+                    '<a href="javascript:void(0);" ' +
+                    'class="upload-btn position-absolute bottom-0 end-0 rounded-circle text-white border border-white shadow" ' +
+                    'style="background:rgb(89 118 175); width: 27px;height: 26px;display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;"> ' +
+                    '<i class="bi bi-camera"></i>' +
+                    '</a>' +
+
+                    '<input type = "file"' +
+                    'name = "ProductImage[]"' +
+                    'class="file-input"' +
+                    'accept = "image/*" ' +
+                    'style = "display: none;" /> ' +
+                    '</div > ' +
+                    ' <input type="hidden" value="' + item.UploadedImage + '" name="ProdImageName[]" class="product-file-input" />' +
+
+                    '<div class="error-msg productimage-error text-danger"' +
+                    'style = "font-size: 12px;" > ' +
+                    '</div>' +
+                    '</td>';
+
+                row += '<td class="text-center" style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    btnHtml +
+                    '</td>';
+
+                row += '</tr>';
+
+                $('#tblRawMaterial tbody').append(row);
+                var lastRow = $('#tblRawMaterial tbody tr:last')[0];
+                toggleSize(lastRow.querySelector('.typo'));
+            });
+            restoreProductImages();
+            updateSerialNumbers();
+        }
+
+        function loadOrderData(data) {
+            $('#tblRawMaterial tbody').html('');
+            $.each(data, function (index, item) {
+
+                var btnHtml = '';
+
+                if (index == data.length - 1) {
+                    btnHtml =
+                        '<button type="button" class="btnAdd" style="border:none;background:none;cursor:pointer;">' +
+                        '<i class="bi bi-plus-square-fill" style="color:#16a34a;font-size:26px"></i>' +
+                        '</button>' +
+                        '<button type="button" class="btnRemove" style="border:none;background:none;cursor:pointer;margin-left:5px;">' +
+                        '<i class="bi bi-dash-square-fill" style="color:red;font-size:26px;"></i>' +
+                        '</button>';
+                }
+                else {
+                    btnHtml =
+                        '<button type="button" class="btnDelete" style="border: none; background: none; cursor: pointer;">' +
+                        '<i class="bi bi-trash-fill" style="color:red;font-size:23px"></i>' +
+                        '</button>';
+                }
+
+                var row = '';
+
+                row += '<tr style="transition: 0.3s;">';
+
+                row += '<td class="srno text-center"  style="border:1px solid #e3e6f0;padding: 10px;font-weight: 600;">' + (index + 1) + '</td>';
+
+                // Product Name
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea type = "text" name = "ProductName[]" autocomplete = "off" ' +
+                    'class="form-control productname" ' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 250px;" >' + item.ProductName + '</textarea>' +
+                    '<div class="error-msg productname-error text-danger" style="font-size: 12px;"></div>' +
+                    '<input type="hidden" name="ProductId[]" class="productid" value="' + item.ProductID + '"/></td>';
+
+
+                //Type 
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<select name="Type[]" onchange="toggleSize(this)"' +
+                    'class="form-control typo" ' +
+                    'style="border-radius: 8px; min-width: 120px; resize: none;" >' +
+                    '<option value="Regular" ' + (item.ProductType == 'Regular' ? ' selected' : '') + '>Regular</option>' +
+                    '<option value="Custom"' + (item.ProductType == 'Custom' ? ' selected' : '') + '>Custom</option>' +
+                    '</select>' +
+                    '<div class="error-msg typo-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Description
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea name="Description[]" autocomplete="off" ' +
+                    'class="form-control description"' +
+                    'style="border-radius: 8px; height: 42px; min-width: 200px;">' +
+                    item.ProductNote +
+                    '</textarea>' +
+                    ' <div class="error-msg description-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Size
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">';
+                row += '<select name="Size[]" class="form-control size ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 120px;"  onchange="GetSQFeet(this)">';
+                row += '<option value="">-Select Size-</option>';
+                row += ' <option value="8x2"' + (item.Size == '8x2' ? ' selected' : '') + '>8x2</option>';
+                row += '  <option value="8x4"' + (item.Size == '8x4' ? ' selected' : '') + '>8x4</option>';
+                row += '</select>';
+                row += ' <div class="error-msg size-error text-danger" style="font-size: 12px;"></div>';
+                row += '</td>';
+
+
+                //Qty
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="number"  min="1" name="Qty[]" ' +
+                    'class="form-control qty" onkeypress="return event.charCode >= 48 && event.charCode <= 57" ' +
+                    'value="' + item.Qty + '" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;" oninput=" if(this.value==0) this.value=1; GetSQFeet(this)"/>' +
+                    '<div class="error-msg qty-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                var sqftPerSheet = 0;
+
+                if (item.Size === "8x2") {
+                    sqftPerSheet = 8 * 2; // 16 sq ft
+                } else if (item.Size === "8x4") {
+                    sqftPerSheet = 8 * 4; // 32 sq ft
+                }
+
+                var totalSqFeet = sqftPerSheet * item.Qty;
+
+                //Sq Feet
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" >' +
+                    '<input type="text" name="SqFeet[]" readonly="readonly" value="' + totalSqFeet + '" class="form-control sqfeet"' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 60px;" /> ' +
+                    '<div class="error-msg sqfeet-error text-danger" style = "font-size: 12px;" ></div > ' +
+                    '</td >';
+
+                //Unit
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="text" name="Unit[]" value="NOS" readonly="readonly" class="form-control unit" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;"/>' +
+                    ' <div class="error-msg unit-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                const imageUrl = item.ImagePathName && item.ImagePathName.trim() !== 'null'
+                    ? item.ImagePathName.replace('~/', '/Content/')
+                    : 'https://placehold.co/100x100?text=Image';
+
+
+                // '<img src="https://placehold.co/100x100?text=Image"' +
+                //Upload image
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" > ' +
+                    '<div class="position-relative d-inline-block">' +
+
+                    `<img src="${imageUrl}" ` +
+                    'class="product-image-preview" ' +
+                    'style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;" />' +
+
+                    '<a href="javascript:void(0);" ' +
+                    'class="upload-btn position-absolute bottom-0 end-0 rounded-circle text-white border border-white shadow" ' +
+                    'style="background:rgb(89 118 175); width: 27px;height: 26px;display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;"> ' +
+                    '<i class="bi bi-camera"></i>' +
+                    '</a>' +
+
+                    '<input type = "file"' +
+                    'name = "ProductImage[]"' +
+                    'class="file-input"' +
+                    'accept = "image/*" ' +
+                    'style = "display: none;" /> ' +
+                    '</div > ' +
+                    ' <input type="hidden" value="' + item.ImagePathName + '" name="ProdImageName[]" class="product-file-input" />' +
+
+                    '<div class="error-msg productimage-error text-danger"' +
+                    'style = "font-size: 12px;" > ' +
+                    '</div>' +
+                    '</td>';
+
+                row += '<td class="text-center" style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    btnHtml +
+                    '</td>';
+
+                row += '</tr>';
+
+                $('#tblRawMaterial tbody').append(row);
+                var lastRow = $('#tblRawMaterial tbody tr:last')[0];
+                toggleSize(lastRow.querySelector('.typo'));
+            });
+            restoreProductImages();
+            updateSerialNumbers();
+        }
+
+        function loadValidateWorkOrderData(data) {
+            $('#tblRawMaterial tbody').html('');
+            $('#check_address').prop('disabled', true);
+            $.each(data, function (index, item) {
+
+
+                var btnHtml = '';
+
+                if (index == data.length - 1) {
+                    btnHtml =
+                        '<button type="button" class="btnAdd" style="border:none;background:none;cursor:pointer;">' +
+                        '<i class="bi bi-plus-square-fill" style="color:#16a34a;font-size:26px"></i>' +
+                        '</button>' +
+                        '<button type="button" class="btnRemove" style="border:none;background:none;cursor:pointer;margin-left:5px;">' +
+                        '<i class="bi bi-dash-square-fill" style="color:red;font-size:26px;"></i>' +
+                        '</button>';
+                }
+                else {
+                    btnHtml =
+                        '<button type="button" class="btnDelete" style="border: none; background: none; cursor: pointer;">' +
+                        '<i class="bi bi-trash-fill" style="color:red;font-size:23px"></i>' +
+                        '</button>';
+                }
+
+                var row = '';
+
+                row += '<tr style="transition: 0.3s;">';
+
+                row += '<td class="srno text-center"  style="border:1px solid #e3e6f0;padding: 10px;font-weight: 600;">' + (index + 1) + '</td>';
+
+                // Product Name
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea type = "text" name = "ProductName[]" autocomplete = "off" ' +
+                    'class="form-control productname" ' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 250px;" >' + item.ProductName + '</textarea>' +
+                    '<div class="error-msg productname-error text-danger" style="font-size: 12px;"></div>' +
+                    '<input type="hidden" name="ProductId[]" class="productid" value="' + item.ProductID + '"/></td>';
+
+
+                //Type 
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<select name="Type[]" onchange="toggleSize(this)"' +
+                    'class="form-control typo" ' +
+                    'style="border-radius: 8px; min-width: 120px; resize: none;" >' +
+                    '<option value="Regular" ' + (item.ProductType == 'Regular' ? ' selected' : '') + '>Regular</option>' +
+                    '<option value="Custom"' + (item.ProductType == 'Custom' ? ' selected' : '') + '>Custom</option>' +
+                    '</select>' +
+                    '<div class="error-msg typo-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Description
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<textarea name="Description[]" autocomplete="off" ' +
+                    'class="form-control description"' +
+                    'style="border-radius: 8px; height: 42px; min-width: 200px;">' +
+                    item.ProductNote +
+                    '</textarea>' +
+                    ' <div class="error-msg description-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Size
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">';
+                row += '<select name="Size[]" class="form-control size"' +
+                    'style="border-radius: 8px; height: 42px; min-width: 120px;"  onchange="GetSQFeet(this)">';
+                row += '<option value="">-Select Size-</option>';
+                row += ' <option value="8x2"' + (item.Size == '8x2' ? ' selected' : '') + '>8x2</option>';
+                row += '  <option value="8x4"' + (item.Size == '8x4' ? ' selected' : '') + '>8x4</option>';
+                row += '</select>';
+                row += ' <div class="error-msg size-error text-danger" style="font-size: 12px;"></div>';
+                row += '</td>';
+
+
+                //Qty
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="number"  min="1" name="Qty[]" ' +
+                    'class="form-control qty" onkeypress="return event.charCode >= 48 && event.charCode <= 57" ' +
+                    'value="' + item.Qty + '" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;" oninput=" if(this.value==0) this.value=1; GetSQFeet(this)"/>' +
+                    '<div class="error-msg qty-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                //Sq Feet
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" >' +
+                    '<input type="text" name="SqFeet[]" readonly="readonly" value="' + item.SqFeet + '" class="form-control sqfeet"' +
+                    'style = "border-radius: 8px; height: 42px; min-width: 60px;" /> ' +
+                    '<div class="error-msg sqfeet-error text-danger" style = "font-size: 12px;" ></div > ' +
+                    '</td >';
+
+                //Unit
+                row += '<td style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    '<input type="text" name="Unit[]" value="NOS" readonly="readonly" class="form-control unit" ' +
+                    'style="border-radius: 8px; height: 42px; min-width: 70px;"/>' +
+                    ' <div class="error-msg unit-error text-danger" style="font-size: 12px;"></div>' +
+                    '</td>';
+
+                const imageUrl = item.ImagePathName && item.ImagePathName.trim() !== 'null'
+                    ? item.ImagePathName.replace('~/', '/Content/')
+                    : 'https://placehold.co/100x100?text=Image';
+
+
+                // '<img src="https://placehold.co/100x100?text=Image"' +
+                //Upload image
+                row += '<td style = "border: 1px solid #e3e6f0; padding: 8px;" > ' +
+                    '<div class="position-relative d-inline-block">' +
+
+                    `<img src="${imageUrl}" ` +
+                    'class="product-image-preview" ' +
+                    'style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;" />' +
+
+                    '<a href="javascript:void(0);" ' +
+                    'class="upload-btn position-absolute bottom-0 end-0 rounded-circle text-white border border-white shadow" ' +
+                    'style="background:rgb(89 118 175); width: 27px;height: 26px;display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;"> ' +
+                    '<i class="bi bi-camera"></i>' +
+                    '</a>' +
+
+                    '<input type = "file"' +
+                    'name = "ProductImage[]"' +
+                    'class="file-input"' +
+                    'accept = "image/*" ' +
+                    'style = "display: none;" /> ' +
+                    '</div > ' +
+                    ' <input type="hidden" value="' + item.ImagePathName + '" name="ProdImageName[]" class="product-file-input" />' +
+
+                    '<div class="error-msg productimage-error text-danger"' +
+                    'style = "font-size: 12px;" > ' +
+                    '</div>' +
+                    '</td>';
+
+                row += '<td class="text-center" style="border: 1px solid #e3e6f0; padding: 8px;">' +
+                    btnHtml +
+                    '</td>';
+
+                row += '</tr>';
+
+                $('#tblRawMaterial tbody').append(row);
+                var lastRow = $('#tblRawMaterial tbody tr:last')[0];
+                toggleSize(lastRow.querySelector('.typo'));
+            });
+            restoreProductImages();
+            updateSerialNumbers();
+        }
+
+        function restoreProductImages() {
+
+            $("#tblRawMaterial tbody tr").each(function (index) {
+
+                var image = localStorage.getItem("ProductImage_" + index);
+
+                if (image) {
+                    $(this)
+                        .find(".product-image-preview")
+                        .attr("src", image);
+                }
+            });
+        }
+
+        function highlightInvalidRow(index) {
+            // last row is the invalid row
+            var row = $("#tblRawMaterial tbody tr").eq(index);
+
+            validateRow(row);
+
+            row.css({
+                "background": "#fff3cd",
+                "border": "2px solid red"
+            });
+
+            $('html,body').animate({
+                scrollTop: row.offset().top - 100
+            }, 400);
+        }
+
+        function validateFileSize(input) {
+            if (input.files && input.files[0]) {
+                var fileSize = input.files[0].size;
+                var maxSize = 50 * 1024 * 1024;
+                if (fileSize > maxSize) {
+                    alert("Please upload image below 50 MB only.");
+                    input.value = "";
+                    return false;
+                }
+            }
+        }
+
+        function ValidateTalRef() {
+
+            var txt = document.getElementById('<%= txttallyref.ClientID %>');
+            var tallyRef = txt.value.trim();
+
+            if (tallyRef == "")
+                return;
+
+            $.ajax({
+                type: "POST",
+                url: "WorkOrderMaster.aspx/ValidateTallyRef",
+                data: JSON.stringify({ TallyNo: tallyRef }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+
+                    if (response.d == true) {
+                        alert("Tally Reference Number already exists.");
+                        txt.value = "";
+                        txt.focus();
+                    }
+
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+
+        function GetSQFeet(val) {
+            var row = $(val).closest("tr");
+
+            var size = row.find(".size").val();
+            var qty = parseFloat(row.find(".qty").val()) || 0;
+
+            var sqftPerSheet = 0;
+
+            if (size === "8x2") {
+                sqftPerSheet = 8 * 2; // 16 sq ft
+            } else if (size === "8x4") {
+                sqftPerSheet = 8 * 4; // 32 sq ft
+            }
+
+            var totalSqFeet = sqftPerSheet * qty;
+
+            row.find(".sqfeet").val(totalSqFeet);
+        }
+
+        $(document).on('click', '.upload-btn', function () {
+            $(this).siblings('.file-input').click();
+        });
+
+        $(document).on('change', '.file-input', function () {
+            const file = this.files[0];
+
+            if (file) {
+                const rowIndex = $(this).closest('tr').index();
+                const reader = new FileReader();
+                const img = $(this).siblings('.product-image-preview');
+
+                reader.onload = function (e) {
+                    img.attr('src', e.target.result);
+
+                    localStorage.setItem("ProductImage_" + rowIndex, e.target.result);
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function toggleSize(typeSelect) {
+            const row = typeSelect.closest("tr");
+            const sizeSelect = row.querySelector(".size");
+
+            if (typeSelect.value === "Custom") {
+                sizeSelect.classList.remove("locked");
+            } else {
+                sizeSelect.classList.add("locked");
+            }
+        }
+
+        function showLoader() {
+            if (typeof Page_ClientValidate === 'function') {
+                var isValid = Page_ClientValidate('001');
+                if (!isValid) {
+                    return false;
+                }
+            }
+
+            try {
+                var allRowsValid = true;
+                var firstInvalidIndex = -1;
+
+                $('#tblRawMaterial tbody tr').each(function (index) {
+                    var rowValid = validateRow($(this));
+                    if (!rowValid && firstInvalidIndex === -1) {
+                        firstInvalidIndex = index;
+                    }
+                    if (!rowValid) {
+                        allRowsValid = false;
+                    }
+                });
+
+                if (!allRowsValid) {
+                    var row = $("#tblRawMaterial tbody tr").eq(firstInvalidIndex);
+                    row.css({
+                        "background": "#fff3cd",
+                        "border": "2px solid red"
+                    });
+                    $('html,body').animate({
+                        scrollTop: row.offset().top - 100
+                    }, 400);
+                    return false;
+                }
+            } catch (err) {
+                console.error("Validation error:", err);
+                alert("Something went wrong validating the form. Please check all rows before saving.");
+                return false; // fail-safe: block postback instead of letting it slip through
+            }
+
+            document.getElementById("pageLoader").style.display = "flex";
+            return true;
+        }
+
+        function CheckIsValidDealer() {
+
+            var dealerName = $("#<%= txtDealerName.ClientID %>").val().trim();
+
+            if (dealerName == "")
+                return;
+
+            $.ajax({
+                type: "POST",
+                url: "WorkOrderMaster.aspx/CheckDealer",
+                data: JSON.stringify({ dealerName: dealerName }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+
+                    if (!response.d) {
+                        alert("Invalid Billing Name.");
+
+                        $("#<%= txtDealerName.ClientID %>").val("");
+                        $("#<%= hdnDealerId.ClientID %>").val("");
+
+                        $("#<%= txtDealerName.ClientID %>").focus();
+                    }
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+    </script>
+
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true"></asp:ScriptManager>
+    <asp:UpdatePanel ID="UpdatePanel" runat="server">
+        <ContentTemplate>
+            <div id="pageLoader">
+                <div style="text-align: center;">
+                    <div class="loader-ring"></div>
+                    <div class="loader-text">Saving Work Order...</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h3 class="m-0 font-weight-bold"><b>Work Order</b></h3>
+                    <asp:Button ID="btnDeList" CssClass="btn btn-outline-danger" Font-Bold="true" Text="List" CausesValidation="false" runat="server" OnClick="btnDeList_Click" />
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lbltallyref" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Work Order No:</asp:Label>
+                            <asp:TextBox ID="txttallyref" runat="server" AutoComplete="off" ValidationGroup="001" CssClass="form-control" ForeColor="Red" Font-Bold="true" onchange="ValidateTalRef()"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator5" runat="server" ErrorMessage="Please Enter Work Order Number"
+                                ControlToValidate="txttallyref" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblworkorderdate" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Work Order Date:</asp:Label>
+                            <asp:TextBox ID="txtworkorderdate" runat="server" ValidationGroup="001" AutoComplete="off" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator2" runat="server" ErrorMessage="Please Enter Work Order Date"
+                                ControlToValidate="txtworkorderdate" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblDealerName" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Billing Name:</asp:Label>
+                            <asp:HiddenField ID="hdnDealerId" runat="server" />
+                            <asp:TextBox ID="txtDealerName" runat="server" AutoComplete="off" ValidationGroup="001" CssClass="form-control" onblur="CheckIsValidDealer()"></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="AutoCompleteExtender1" runat="server" CompletionListCssClass="completionList"
+                                CompletionListHighlightedItemCssClass="itemHighlighted" CompletionListItemCssClass="listItem"
+                                CompletionInterval="10" MinimumPrefixLength="1" ServiceMethod="GetDealerNameList"
+                                TargetControlID="txtDealerName" OnClientItemSelected="DealerSelected">
+                            </asp:AutoCompleteExtender>
+                            <span class="highlight-checkbox">
+                                <input type="checkbox" id="check_address" />
+                                <label for="check_address">Create W/O Against Billing Name</label>
+                            </span>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator18" runat="server" ErrorMessage="Please Enter Billing Name"
+                                ControlToValidate="txtDealerName" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblCustName" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Shipping Name:</asp:Label>
+                            <asp:TextBox ID="txtCustName" runat="server" AutoComplete="off" ValidationGroup="001" CssClass="form-control"></asp:TextBox>
+                            <asp:AutoCompleteExtender ID="AutoCompleteExtender2" runat="server" CompletionListCssClass="completionList"
+                                CompletionListHighlightedItemCssClass="itemHighlighted" CompletionListItemCssClass="listItem"
+                                CompletionInterval="10" MinimumPrefixLength="1" ServiceMethod="GetCustNameList"
+                                TargetControlID="txtCustName" OnClientItemSelected="CompanyData">
+                            </asp:AutoCompleteExtender>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator3" runat="server" ErrorMessage="Please Enter Shipping Name"
+                                ControlToValidate="txtCustName" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblcustRef" runat="server" Font-Bold="true" CssClass="form-label">Customer Ref.:</asp:Label>
+                            <asp:TextBox ID="txtrefno" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-12">
+                            <asp:Label ID="lblBillingAddress" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Billing Address:</asp:Label>
+                            <asp:TextBox TextMode="MultiLine" ID="txtBillingAddress" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <asp:Label ID="lblShipAddress" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Shipping Address:</asp:Label>
+                            <asp:TextBox TextMode="MultiLine" ID="txtShipAddress" runat="server" ValidationGroup="001" CssClass="form-control" Style="height: 59px;"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator6" runat="server" ErrorMessage="Please Select Shipping Address"
+                                ControlToValidate="txtShipAddress" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-12">
+                            <asp:Label ID="lblBillGst" runat="server" Font-Bold="true" CssClass="form-label">Billing GstNo:</asp:Label>
+                            <asp:TextBox ID="txtBillGst" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <asp:Label ID="lblShipGst" runat="server" Font-Bold="true" CssClass="form-label">Shipping GstNo:</asp:Label>
+                            <asp:TextBox ID="txtShipGst" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                            <br />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-12" runat="server">
+                            <asp:Label ID="lblBillPinCode" runat="server" Font-Bold="true" CssClass="form-label">Billing PinCode:</asp:Label>
+                            <asp:TextBox ID="txtBillPinCode" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <asp:Label ID="lblShipPinCode" runat="server" Font-Bold="true" CssClass="form-label">Shipping PinCode:</asp:Label>
+                            <asp:TextBox ID="txtShipPinCode" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                            <br />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblDeliveryDate" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Delivery Date:</asp:Label>
+                            <asp:TextBox ID="txtDeliveryDate" runat="server" TextMode="Date" CssClass="form-control"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator7" runat="server" ErrorMessage="Please Select Delivery Date"
+                                ControlToValidate="txtDeliveryDate" ForeColor="Red" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
+                        </div>
+                        <div class="col-md-4 col-12"></div>
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="lblMCImage" runat="server" Font-Bold="true" CssClass="form-label">Attach Order <span class="text-danger mt-1">(.pdf)</span>:</asp:Label>
+                            <asp:FileUpload ID="FileMCImage" runat="server" CssClass="form-control" accept=".pdf" onchange="validateFileSize(this)" />
+                            <small class="text-danger d-block mt-1">Maximum file size: 50 MB</small>
+                            <center>
+                                <a id="lblPdfUrl" runat="server" visible="false" title="View Invoice" style="margin-right: 10px;">
+                                    <i class="bi bi-file-pdf" style="font-size: 26px; color: #0d6efd; cursor: pointer;"></i>
+                                </a>
+                            </center>
+                        </div>
+                    </div>
+                    <br />
+                    <h5>Add Products</h5>
+                    <hr />
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table id="tblRawMaterial" style="max-width: 1400px; width: 100%; border-collapse: collapse; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.12); font-family: Segoe UI;">
+                            <thead>
+                                <tr style="background: #2d6be0; color: white; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: 0.5px; height: 55px;">
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 50px;">Sr No</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 250px;">Product Name</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 120px;">Type</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 200px;">Description</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 120px;">Size</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 70px;">Qty</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 60px;">Sq Feet</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 60px;">Unit</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 100px;">Upload Image</th>
+                                    <th style="border: 1px solid #dcdcdc; padding: 12px; min-width: 80px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="transition: 0.3s;">
+                                    <!-- Sr No -->
+                                    <td class="srno text-center"
+                                        style="border: 1px solid #e3e6f0; padding: 10px; font-weight: 600; color: black !important;">1
+                                    </td>
+
+                                    <!-- Product Name -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <textarea type="text"
+                                            name="ProductName[]"
+                                            autocomplete="off"
+                                            class="form-control productname"
+                                            style="border-radius: 8px; height: 42px; min-width: 250px;"></textarea>
+                                        <div class="error-msg productname-error text-danger" style="font-size: 12px;"></div>
+                                        <input type="hidden" name="ProductId[]" class="productid" />
+                                    </td>
+
+
+                                    <!-- Type -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <select name="Type[]" onchange="toggleSize(this)"
+                                            class="form-control typo"
+                                            style="border-radius: 8px; min-width: 120px; resize: none;">
+                                            <option value="Regular" selected>Regular</option>
+                                            <option value="Custom">Custom</option>
+                                        </select>
+                                        <div class="error-msg typo-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Description -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <textarea
+                                            name="Description[]" autocomplete="off"
+                                            class="form-control description"
+                                            style="border-radius: 8px; height: 42px; min-width: 200px;"></textarea>
+                                        <div class="error-msg descr-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Size -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <select name="Size[]"
+                                            class="form-control size"
+                                            style="border-radius: 8px; height: 42px; min-width: 120px;" onchange="GetSQFeet(this)">
+                                            <option value="">-Select Size-</option>
+                                            <option value="8x2">8x2</option>
+                                            <option value="8x4">8x4</option>
+                                        </select>
+                                        <div class="error-msg size-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Qty -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <input type="number" min="1" name="Qty[]"
+                                            class="form-control qty" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                            style="border-radius: 8px; height: 42px; min-width: 70px;" oninput=" if(this.value==0) this.value=1;  if (this.value > 10000) this.value = 10000; GetSQFeet(this)" />
+                                        <div class="error-msg qty-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Sq Feet -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <input type="text" name="SqFeet[]" readonly="readonly" class="form-control sqfeet"
+                                            style="border-radius: 8px; height: 42px; min-width: 60px;" />
+                                        <div class="error-msg sqfeet-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Unit -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <input type="text" name="Unit[]" value="NOS" readonly="readonly" class="form-control unit"
+                                            style="border-radius: 8px; height: 42px; min-width: 60px;" />
+                                        <div class="error-msg unit-error text-danger" style="font-size: 12px;"></div>
+                                    </td>
+
+                                    <!-- Upload Image -->
+                                    <td style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <div class="position-relative d-inline-block">
+                                            <img src="https://placehold.co/100x100?text=Image" class="product-image-preview"
+                                                style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;" />
+                                            <a href="javascript:void(0);" class="upload-btn position-absolute bottom-0 end-0 rounded-circle text-white border border-white shadow"
+                                                style="background: rgb(89 118 175); width: 27px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;">
+                                                <i class="bi bi-camera"></i>
+                                            </a>
+                                            <input type="file" name="ProductImage[]" class="file-input" accept="image/*" style="display: none;" />
+                                            <input type="hidden" name="ProdImageName[]" class="product-file-input" />
+                                        </div>
+
+                                        <div class="error-msg productimage-error text-danger"
+                                            style="font-size: 12px;">
+                                        </div>
+                                    </td>
+
+                                    <!-- Action -->
+                                    <td class="text-center" style="border: 1px solid #e3e6f0; padding: 8px;">
+                                        <button type="button" class="btnAdd" style="border: none; background: none; cursor: pointer;">
+                                            <i class="bi bi-plus-square-fill"
+                                                style="color: #16a34a; font-size: 26px;"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr />
+                    <center>
+                        <div>
+                            <asp:HiddenField ID="hdnVal" runat="server" />
+                            <asp:LinkButton ID="btnsave" ValidationGroup="001" class="btn btn-outline-success me-3" runat="server" Text="Save" OnClientClick="return showLoader();" OnClick="btnsave_Click"></asp:LinkButton>
+                        </div>
+                    </center>
+                </div>
+            </div>
+        </ContentTemplate>
+        <Triggers>
+            <asp:PostBackTrigger ControlID="btnsave" />
+        </Triggers>
+    </asp:UpdatePanel>
+</asp:Content>

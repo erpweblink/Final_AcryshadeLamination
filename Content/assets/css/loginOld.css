@@ -1,0 +1,122 @@
+﻿body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa, #dfe9f3) !important;
+    min-height: 100vh !important;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.border-solid {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 20px;
+    background: #374b73;
+    box-shadow: 12px 8px 35px 3px #24252a;
+    padding: 15px;
+}
+
+.auth-box {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent;
+}
+
+.card-block {
+    padding: 25px;
+}
+
+h3 {
+    font-size: 30px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;    
+}
+
+.form-control {
+    width: 100%;
+    height: 52px;
+    border-radius: 12px;
+    border: 3px solid #db8e03;
+    padding: 12px 15px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: linear-gradient(251deg, #87808047, #ffffff47) !important;
+    color: white;
+    font-weight: 700;
+}
+
+.text-danger,
+span[style*="Red"] {
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+.btn-light-primary {
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #fdb90da6, #d7730b);
+    color: #fdfdfd;
+    font-size: 16px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+    .btn-light-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
+        color: #374b73;
+    }
+
+hr {
+    margin: 25px 0;
+    border: none;
+    border-top: 1px solid #eee;
+}
+
+.text-inverse {
+    color: #ededed;
+    font-size: 15px;
+}
+
+img {
+    max-width: 100%;
+    object-fit: contain;
+}
+
+@media (max-width: 576px) {
+
+    .border-solid {
+        padding: 10px;
+        border-radius: 15px;
+    }
+
+    .card-block {
+        padding: 20px;
+    }
+
+    h3 {
+        font-size: 24px;
+    }
+
+    .form-control {
+        height: 48px;
+    }
+
+    .btn-light-primary {
+        height: 48px;
+        font-size: 15px;
+    }
+}

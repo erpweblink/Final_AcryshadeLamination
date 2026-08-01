@@ -1,0 +1,318 @@
+<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" EnableEventValidation="false" AutoEventWireup="true" Async="true" CodeFile="Delivery.aspx.cs" Inherits="Delivery" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <style type="text/css">
+        .completionList {
+            scroll-behavior: smooth;
+            border: solid 1px Gray;
+            border-radius: 0 0 6px 6px;
+            margin: 0px;
+            padding: 3px;
+            height: 200px;
+            overflow: auto;
+            width: 500px;
+            background-color: #FFFFFF;
+            font-size: 16px;
+        }
+
+        .listItem {
+            color: #191919;
+        }
+
+        .itemHighlighted {
+            background-color: #5b78b1;
+            font-weight: 900;
+        }
+
+
+
+        /*CSS fro Image Pop UP*/
+        .product-image-preview {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .image-hover-container {
+            display: inline-block;
+        }
+
+        .image-popup {
+            display: none;
+            position: fixed; /* important */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 99999;
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 25px rgba(0,0,0,.4);
+        }
+
+            .image-popup img {
+                max-width: 600px;
+                max-height: 500px;
+                width: auto;
+                height: auto;
+            }
+
+        .image-hover-container:hover .image-popup {
+            display: block;
+        }
+        /*END*/
+    </style>
+    <script type="text/javascript">
+        $("[src*=add-black]").live("click", function () {
+            $(this).closest("tr").after("<tr><td></td><td colspan = '999'>" + $(this).next().html() + "</td></tr>")
+            $(this).attr("src", "/Content/assets/images/newminus.png");
+        });
+        $("[src*=newminus]").live("click", function () {
+            $(this).attr("src", "/Content/assets/images/add-black.png");
+            $(this).closest("tr").next().remove();
+        });
+
+        function ToggleConfirmButton() {
+            var lrFile = document.getElementById("<%= fuLRCopy.ClientID %>");
+            var invoiceFile = document.getElementById("<%= fuINCopy.ClientID %>");
+            var btn = document.getElementById("<%= btnConfirmDelivery.ClientID %>");
+
+            var hasFile = lrFile.files.length > 0 || invoiceFile.files.length > 0;
+
+            btn.disabled = !hasFile;
+        }
+    </script>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <asp:ScriptManager ID="ScriptManager1" runat="server"></asp:ScriptManager>
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <div class="card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h3 class="m-0 font-weight-bold"><b>Delivery List</b></h3>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <asp:Label ID="Label1" runat="server" Font-Bold="true" CssClass="form-label">Search:</asp:Label>
+                            <asp:TextBox ID="txtcompanyname" CssClass="form-control" runat="server" Width="100%"></asp:TextBox>
+                        </div>
+                        <div class="col-md-2">
+                            <asp:LinkButton ID="btnSearch" runat="server"
+                                OnClick="txtCustomerName_TextChanged" CssClass="btn btn-outline-success"> 
+                            <i class="bi bi-search" ></i>
+                             </asp:LinkButton>
+                            <asp:LinkButton ID="btnrefresh" runat="server"
+                                OnClick="btnrefresh_Click" CssClass="btn btn-outline-danger"> 
+                            <i class="bi bi-arrow-clockwise" ></i>
+                            </asp:LinkButton>
+                        </div>
+                        <div class="col-md-7 d-flex justify-content-end">
+                            <div style="width: 120px;">
+                                <asp:DropDownList ID="ddlPageSize" runat="server" CssClass="form-control" AutoPostBack="true" Font-Bold="true" OnSelectedIndexChanged="ddlPageSize_SelectedIndexChanged">
+                                    <asp:ListItem Text="10" Value="10" Selected="True" />
+                                    <asp:ListItem Text="50" Value="50" />
+                                    <asp:ListItem Text="All" Value="0" />
+                                </asp:DropDownList>
+                            </div>
+                            <div style="width: 200px;">
+                                <asp:DropDownList ID="ddlWOStatus" runat="server" CssClass="form-control" AutoPostBack="true" Font-Bold="true" OnSelectedIndexChanged="ddlPageSize_SelectedIndexChanged">
+                                    <asp:ListItem Text="Ready to Dispatch" Value="Ready to Dispatch" Selected="True" />
+                                    <asp:ListItem Text="Dispatched" Value="Dispatched" />
+                                    <asp:ListItem Text="Out For Delivery" Value="Out For Delivery" />
+                                    <asp:ListItem Text="Delivered" Value="Delivered" />
+                                    <asp:ListItem Text="All" Value="" />
+                                </asp:DropDownList>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <div class="table-responsive">
+                        <asp:GridView ID="GVCompany" runat="server" DataKeyNames="ID" OnRowDataBound="GVCompany_RowDataBound" CssClass="table table-bordered table-striped" HeaderStyle-BackColor="#2d6be0"
+                            HeaderStyle-Font-Bold="true" HeaderStyle-HorizontalAlign="Center" AutoGenerateColumns="false" OnRowCommand="GVCompany_RowCommand">
+                            <Columns>
+                                <asp:TemplateField HeaderText=" " HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <img alt="" style="cursor: pointer; width: 26px;" src="/Content/assets/images/add-black.png" />
+                                        <asp:Panel ID="pnlOrders" runat="server" Style="display: none">
+                                            <asp:GridView ID="gvDetails" runat="server" HeaderStyle-HorizontalAlign="Center" CssClass="display table table-striped table-hover" AutoGenerateColumns="false">
+                                                <HeaderStyle BackColor="#2d6be0" />
+                                                <Columns>
+                                                    <asp:TemplateField HeaderText="Sr.No." HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                                        <ItemTemplate>
+                                                            <asp:Label ID="lblsnos" runat="server" Text='<%# Container.DataItemIndex+1 %>'></asp:Label>
+                                                        </ItemTemplate>
+                                                    </asp:TemplateField>
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="ProductName" HeaderText="Product Name" />
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="Description" HeaderText="Description" />
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="Size" HeaderText="Size" />
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="Unit" HeaderText="Unit" />
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="Qty" HeaderText="Qty" />
+                                                    <asp:BoundField ItemStyle-HorizontalAlign="Center" HeaderStyle-ForeColor="White" DataField="SqFeet" HeaderText="Sq Feet" />
+                                                    <asp:TemplateField HeaderText="Custom Image" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                                        <ItemTemplate>
+                                                            <div class="image-hover-container">
+                                                                <asp:Image ID="imG" runat="server"
+                                                                    ImageUrl='<%# !string.IsNullOrEmpty(Convert.ToString(Eval("UploadedImage"))) 
+                                                                ? Convert.ToString(Eval("UploadedImage")).Replace("~/", "/Content/") 
+                                                                : "https://placehold.co/100x100?text=Image" %>'
+                                                                    CssClass="product-image-preview" />
+
+                                                                <div class="image-popup">
+                                                                    <asp:Image ID="imgLarge" runat="server"
+                                                                        ImageUrl='<%# !string.IsNullOrEmpty(Convert.ToString(Eval("UploadedImage"))) 
+                                                                    ? Convert.ToString(Eval("UploadedImage")).Replace("~/", "/Content/") 
+                                                                    : "https://placehold.co/400x400?text=Image" %>' />
+                                                                </div>
+                                                            </div>
+                                                        </ItemTemplate>
+                                                    </asp:TemplateField>
+                                                </Columns>
+                                            </asp:GridView>
+                                        </asp:Panel>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Sr.No." HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblsno" runat="server" Text='<%# Container.DataItemIndex+1 %>'></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Tally Ref No." HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblTallyRefNo" runat="server" ForeColor="Red" Font-Bold="true" Text='<%#Eval("TallyRefNo")%>'></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Dealer" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblDealer" runat="server" Text='<%#Eval("Dealer")%>'></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Customer Name" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblCustomerName" runat="server" Text='<%#Eval("CustomerName")%>'></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Estimated Delivery Date" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblDeliveryDate" runat="server" Text='<%#Eval("DeliveryDate")%>'></asp:Label>
+                                        <asp:Label ID="lblOgForDate" runat="server" Text='<%#Eval("OgForDate")%>' CssClass="d-none"></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Out For Delivery Date" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:Label ID="lblLRUplodedDate" runat="server" Text='<%#Eval("LRUplodedDate")%>'></asp:Label>
+                                        <asp:Label ID="lblOgForLRUplodedDate" runat="server" Text='<%#Eval("OgForLRUplodedDate")%>' CssClass="d-none"></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="LR Attachment" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:LinkButton ID="btn_View_aattach" runat="server" CommandName="RowPO" CommandArgument='<%# Eval("AttachmentLR") %>'
+                                            ForeColor='<%# string.IsNullOrEmpty(Convert.ToString(Eval("AttachmentLR"))) ? System.Drawing.Color.Red : System.Drawing.Color.FromArgb(13,110,253) %>'
+                                            Enabled='<%# string.IsNullOrEmpty(Convert.ToString(Eval("AttachmentLR"))) ? false:true %>'
+                                            ToolTip="Open File"><i class="bi-file-earmark-medical"  style="font-size:26px;"></i></asp:LinkButton>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Invoice Attachment" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center">
+                                    <ItemTemplate>
+                                        <asp:LinkButton ID="btn_View_IN_aattach" runat="server" CommandName="RowPO" CommandArgument='<%# Eval("InvoiceAttached") %>'
+                                            ForeColor='<%# string.IsNullOrEmpty(Convert.ToString(Eval("InvoiceAttached"))) ? System.Drawing.Color.Red : System.Drawing.Color.FromArgb(13,110,253) %>'
+                                            Enabled='<%# string.IsNullOrEmpty(Convert.ToString(Eval("InvoiceAttached"))) ? false:true %>'
+                                            ToolTip="Open File"><i class="bi-file-earmark-medical"  style="font-size:26px;"></i></asp:LinkButton>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Status" HeaderStyle-ForeColor="White" ItemStyle-HorizontalAlign="Center" HeaderStyle-Width="160px">
+                                    <ItemTemplate>
+                                        <asp:LinkButton ID="lblVal" runat="server"
+                                            Enabled='<%# string.IsNullOrWhiteSpace(Eval("OrderDelivered").ToString()) ? true : false %>'
+                                            Text='<%#
+                                                    !string.IsNullOrWhiteSpace(Eval("OrderDelivered").ToString()) ?"Delivered" :
+                                                    Eval("IsAllCompleted").ToString() == "True" ? "Out for Delivery" :
+                                                    Eval("IsDispatched").ToString() == "True" ? "Dispatched" :
+                                                    Eval("IsProductionCompleted").ToString() == "True" ? "Ready to Dispatch" :
+                                                    ""
+                                                %>'
+                                            ForeColor='<%#
+                                                    !string.IsNullOrWhiteSpace(Eval("OrderDelivered").ToString())? System.Drawing.ColorTranslator.FromHtml("#994800"):
+                                                    Eval("IsAllCompleted").ToString() == "True" ? System.Drawing.ColorTranslator.FromHtml("#0f5df1") :
+                                                    Eval("IsDispatched").ToString() == "True" ? System.Drawing.Color.Green :
+                                                    Eval("IsProductionCompleted").ToString() == "True" ? System.Drawing.Color.Red :
+                                                    System.Drawing.Color.Black
+                                                %>'
+                                            Font-Bold="true"
+                                            CommandName="UpdateStatus"
+                                            CommandArgument='<%# Eval("ID") + "," + Eval("IsProductionCompleted") + "," + Eval("IsDispatched") + "," + Eval("IsAllCompleted")+ "," + Eval("OgForDate") %>'>
+                                       </asp:LinkButton>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                            </Columns>
+                        </asp:GridView>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="deliveryModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content" style="background: linear-gradient(180deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 25%), linear-gradient(184deg, #374b73 0%, #1a3263 45%, #5087ef 100%);">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title" style="color: whitesmoke">Complete Delivery</h5>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <asp:HiddenField ID="hfOrderId" runat="server" />
+
+                            <div class="mb-3">
+                                <label style="color: whitesmoke">LR Copy <span style="color: red">*</span></label>
+                                <asp:FileUpload ID="fuLRCopy" runat="server" CssClass="form-control" onchange="ToggleConfirmButton();" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label style="color: whitesmoke">Invoice Copy<span style="color: red">*</span></label>
+                                <asp:FileUpload ID="fuINCopy" runat="server" CssClass="form-control" onchange="ToggleConfirmButton();" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label style="color: whitesmoke">Remark<span style="color: red">*</span></label>
+                                <asp:TextBox ID="txtRemark" runat="server"
+                                    CssClass="form-control"
+                                    TextMode="MultiLine"
+                                    Rows="3" Style="background: transparent; color: whitesmoke;"></asp:TextBox>
+                                <asp:RequiredFieldValidator
+                                    ID="rfvRemark"
+                                    runat="server"
+                                    ControlToValidate="txtRemark"
+                                    ErrorMessage="Remark is required."
+                                    ForeColor="Red"
+                                    Display="Dynamic"
+                                    ValidationGroup="Delivery">
+                                </asp:RequiredFieldValidator>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <asp:Button ID="btnConfirmDelivery"
+                                runat="server"
+                                Text="Confirm"
+                                Enabled="false"
+                                CssClass="btn btn-light"
+                                ValidationGroup="Delivery"
+                                OnClick="btnConfirmDelivery_Click" />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </ContentTemplate>
+        <Triggers>
+            <asp:PostBackTrigger ControlID="btnConfirmDelivery" />
+        </Triggers>
+    </asp:UpdatePanel>
+</asp:Content>

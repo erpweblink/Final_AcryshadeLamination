@@ -1,0 +1,473 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="MasterPage.master.cs" Inherits="MasterPage" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Designed for Acryshade Laminates Pvt. Ltd.">
+    <link rel="icon" type="image/png" href="../Content/assets/images/CompanyLogo/CompLogo.jpg">
+    <title>Acryshade Laminates</title>
+
+    <link rel="stylesheet" href="../Content/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../Content/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="../Content/assets/css/customebynikhil.css" />
+    <link rel="stylesheet" href="../Content/assets/css/style.css">
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+
+<body>
+    <div class="admin-shell">
+        <div class="sidebar-backdrop" data-sidebar-close></div>
+        <aside class="admin-sidebar" id="adminSidebar" aria-label="Main navigation">
+            <div class="sidebar-header">
+                <a class="brand-mark" href="https://www.acryshadelaminates.com/" aria-label="Acryshade Laminates">
+                    <span>
+                        <img src="../Content/assets/images/CompanyLogo/CompLogo.jpg" style="width: 39px;" /></span>
+                    <span class="brand-copy">
+                        <span class="brand-title">Acryshade Laminates</span>
+                        <span class="brand-subtitle">Acryshade Laminates Pvt. Ltd.</span>
+                    </span>
+                </a>
+            </div>
+            <%-- {active}... class to make it bold--%>
+            <nav class="sidebar-nav">
+                <a class="nav-link active" href="/Admin/Dashboard.aspx" aria-current="page" id="DashboardTab" runat="server" title="📊 Dashboard">
+                    <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+
+                <div class="nav-dropdown" id="MasterTab" runat="server">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle-menu active" title="🗂️ Masters">
+                        <span class="nav-icon">
+                            <i class="bi bi-window-stack"></i>
+                        </span>
+
+                        <span class="nav-text">Masters</span>
+                        <span class="ms-auto d-none">
+                            <i class="bi bi-chevron-down dropdown-icon" style="color: #3d73ea; font-weight: 900;"></i>
+                        </span>
+                    </a>
+
+                    <div class="dropdown-menu-sidebar">
+                        <a href="/Admin/RoleMaster.aspx" class="nav-link sub-link" id="RolesTab" runat="server" title="🪪 Roles">
+                            <span class="nav-icon">
+                                <i class="bi bi-person-vcard"></i>
+                            </span>
+
+                            <span class="nav-text">Roles</span>
+                        </a>
+
+                        <a href="/Admin/UserList.aspx" class="nav-link sub-link" id="UsersTab" runat="server" title="👥 Users">
+                            <span class="nav-icon">
+                                <i class="bi bi-people"></i>
+                            </span>
+
+                            <span class="nav-text">Users</span>
+                        </a>
+
+                        <a href="/Admin/DealerList.aspx" class="nav-link sub-link" id="DealersTab" runat="server" title="👤 Dealers">
+                            <span class="nav-icon">
+                                <i class="bi bi-person"></i>
+                            </span>
+
+                            <span class="nav-text">Dealers</span>
+                        </a>
+
+                        <a href="/Admin/CompanyList.aspx" class="nav-link sub-link" id="CompaniesTab" runat="server" title="🔗 Distributor">
+                            <span class="nav-icon">
+                                <i class="bi bi-link"></i>
+                            </span>
+
+                            <span class="nav-text">Distributor</span>
+                        </a>
+
+                        <a href="/Admin/StageList.aspx" class="nav-link sub-link" id="StagesTab" runat="server" title="📋 Stages">
+                            <span class="nav-icon">
+                                <i class="bi bi-list-nested"></i>
+                            </span>
+
+                            <span class="nav-text">Stages</span>
+                        </a>
+
+                        <a href="/Admin/MachineList.aspx" class="nav-link sub-link" id="MachineTab" runat="server" title="🛠️ Machine">
+                            <span class="nav-icon">
+                                <i class="bi bi-tools"></i>
+                            </span>
+
+                            <span class="nav-text">Machine</span>
+                        </a>
+
+                        <a href="/Admin/RawMaterialList.aspx" class="nav-link sub-link d-none" id="RawMatTab" runat="server" title="📦 Raw Material">
+                            <span class="nav-icon">
+                                <i class="bi bi-boxes"></i>
+                            </span>
+
+                            <span class="nav-text">Raw Material</span>
+                        </a>
+
+                        <a href="/Admin/ProductList.aspx" class="nav-link sub-link" id="ProductTab" runat="server" title="🛒 Products">
+                            <span class="nav-icon">
+                                <i class="bi bi-cart-check-fill"></i>
+                            </span>
+
+                            <span class="nav-text">Products</span>
+                        </a>
+
+                        <a href="/Admin/TransporterList.aspx" class="nav-link sub-link" id="TransTab" runat="server" title="🚚 Transporter">
+                            <span class="nav-icon">
+                                <i class="bi bi-truck"></i>
+                            </span>
+
+                            <span class="nav-text">Transporter</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a class="nav-link active" href="/Admin/WorkOrderList.aspx" aria-current="page" id="WOrdTab" runat="server" title="📝 Work Order">
+                    <span class="nav-icon"><i class="bi bi-card-checklist" aria-hidden="true"></i></span>
+                    <span class="nav-text">Work Order</span>
+                </a>
+
+                <a class="nav-link active" href="/Admin/PlaceOrder.aspx" aria-current="page" id="PLoTab" runat="server" visible="false" title="🏪 Place Order">
+                    <span class="nav-icon"><i class="bi bi-shop-window" aria-hidden="true"></i></span>
+                    <span class="nav-text">Place Order</span>
+                </a>
+
+                <a class="nav-link active" href="/Admin/OrderList.aspx" aria-current="page" id="ODLiTab" runat="server" visible="false" title="🛒 Add Cart">
+                    <span class="nav-icon"><i class="bi bi-cart" aria-hidden="true"></i></span>
+                    <span class="nav-text">Add Cart</span>
+                </a>
+
+                <a class="nav-link active" href="/Admin/OrderHistory.aspx" aria-current="page" id="MyOTab" runat="server" visible="false" title="🕒 My Orders">
+                    <span class="nav-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+                    <span class="nav-text">My Order</span>
+                </a>
+
+                <div class="nav-dropdown" id="ProductionTab" runat="server">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle-menu active" title="🏭 Production">
+                        <span class="nav-icon">
+                            <i class="bi bi-buildings"></i>
+                        </span>
+
+                        <span class="nav-text">Production</span>
+                        <span class="ms-auto d-none">
+                            <i class="bi bi-chevron-down dropdown-icon" style="color: #3d73ea; font-weight: 900;"></i>
+                        </span>
+                    </a>
+
+                    <div class="dropdown-menu-sidebar">
+                        <a href="/Production/AssignMachine.aspx" class="nav-link sub-link" id="AssMCTab" runat="server" title="🤖 Assign Machine">
+                            <span class="nav-icon">
+                                <i class="bi bi-robot"></i>
+                            </span>
+
+                            <span class="nav-text">Assign Machine</span>
+                        </a>
+
+                        <a href="/Production/WorkOrdrForDesign.aspx" class="nav-link sub-link" id="DesAppTab" runat="server" title="👍 Design Approval">
+                            <span class="nav-icon">
+                                <i class="bi bi-hand-thumbs-up-fill"></i>
+                            </span>
+
+                            <span class="nav-text">Design Approval</span>
+                        </a>
+
+                        <a href="/Production/AssignWorkOrder.aspx" class="nav-link sub-link" id="RecWOTab" runat="server" title="📅 Scheduling / Allotment">
+                            <span class="nav-icon">
+                                <i class="bi bi-clipboard-check"></i>
+                            </span>
+
+                            <span class="nav-text">Scheduling/Allotment</span>
+                        </a>
+
+                        <a href="/Production/WOProductionS1.aspx" class="nav-link sub-link" id="WOProdTab" runat="server" title="🏭 Production Stage 1">
+                            <span class="nav-icon">
+                                <i class="bi bi-building-gear"></i>
+                            </span>
+
+                            <span class="nav-text">Production Stage 1</span>
+                        </a>
+
+                        <a href="/Production/WOProductionS2.aspx" class="nav-link sub-link" id="WOProd1Tab" runat="server" title="🏭 Production Stage 2">
+                            <span class="nav-icon">
+                                <i class="bi bi-building-gear"></i>
+                            </span>
+
+                            <span class="nav-text">Production Stage 2</span>
+                        </a>
+
+                        <a href="/Production/Packaging.aspx" class="nav-link sub-link" id="WOPackTab" runat="server" title="📦 Packaging">
+                            <span class="nav-icon">
+                                <i class="bi bi-box-seam-fill"></i>
+                            </span>
+
+                            <span class="nav-text">Packaging</span>
+                        </a>
+
+                        <a href="/Production/Delivery.aspx" class="nav-link sub-link" id="WODelTab" runat="server" title="🚛 Dispatch Status">
+                            <span class="nav-icon">
+                                <i class="bi bi-truck"></i>
+                            </span>
+
+                            <span class="nav-text">Dispatch Status</span>
+                        </a>
+
+                    </div>
+                </div>
+
+
+                <div class="nav-dropdown" id="DIvRep" runat="server">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle-menu active" title="📑 Reports">
+                        <span class="nav-icon">
+                            <i class="bi bi-file-earmark-spreadsheet"></i>
+                        </span>
+
+                        <span class="nav-text">Reports</span>
+                        <span class="ms-auto d-none">
+                            <i class="bi bi-chevron-down dropdown-icon" style="color: #3d73ea; font-weight: 900;"></i>
+                        </span>
+                    </a>
+
+                    <div class="dropdown-menu-sidebar">
+                        <a href="/Reports/ProductionReport.aspx" class="nav-link sub-link" id="PTRTab" runat="server" title="📈 Production Tracking Reports">
+                            <span class="nav-icon">
+                                <i class="bi bi-caret-right-fill"></i>
+                            </span>
+                            <span class="nav-text">Production Reports</span>
+                        </a>
+                        <a href="/Reports/MachineBreakdown.aspx" class="nav-link sub-link" id="MDTab" runat="server" title="🔧 Machine BreakDown Reports">
+                            <span class="nav-icon">
+                                <i class="bi bi-wrench-adjustable-circle"></i>
+                            </span>
+                            <span class="nav-text">Machine BreakDown</span>
+                        </a>
+                        <a href="/Reports/TrendingReports.aspx" class="nav-link sub-link" id="TrenTab" runat="server" title="📊 Trending Products Reports">
+                            <span class="nav-icon">
+                                <i class="bi bi-caret-right-fill"></i>
+                            </span>
+                            <span class="nav-text">Trending Reports</span>
+                        </a>
+                    </div>
+                </div>
+
+
+                <div class="nav-dropdown" id="DivLeads" runat="server">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle-menu active" title="👥 Leads">
+                        <span class="nav-icon">
+                            <i class="bi bi-person-lines-fill"></i>
+                        </span>
+
+                        <span class="nav-text">Leads</span>
+                        <span class="ms-auto d-none">
+                            <i class="bi bi-chevron-down dropdown-icon" style="color: #3d73ea; font-weight: 900;"></i>
+                        </span>
+                    </a>
+
+                    <div class="dropdown-menu-sidebar">
+                        <a href="/LeadGeneration/LeadList.aspx" class="nav-link sub-link" id="A1" runat="server" title="📣 Meta Leads">
+                            <span class="nav-icon">
+                                <i class="bi bi-meta"></i>
+                            </span>
+                            <span class="nav-text">Meta Leads</span>
+                        </a>
+                        <a href="/LeadGeneration/WhatsAppLeads.aspx" class="nav-link sub-link" id="A2" runat="server" title="💬 WhatsApp Leads">
+                            <span class="nav-icon">
+                                <i class="bi bi-whatsapp"></i>
+                            </span>
+                            <span class="nav-text">WhatsApp Leads</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a class="nav-link active" href="/Authorization/UserAuthorization.aspx" aria-current="page" id="UserAuthorTab" runat="server" title="🔐 User Authorization">
+                    <span class="nav-icon"><i class="bi bi-universal-access" aria-hidden="true"></i></span>
+                    <span class="nav-text">User Authorization</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer-image">
+                <img src="/Content/assets/images/draw3.png"
+                    alt="Dashboard Illustration"
+                    class="sidebar-illustration" />
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <nav class="navbar admin-navbar navbar-expand bg-white">
+                <div class="container-fluid px-3 px-lg-4">
+                    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-expanded="true" aria-label="Toggle sidebar">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="navbar-actions ms-auto">
+                        <button class="icon-button theme-toggle d-none" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">
+                            <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+                        </button>
+
+                        <div class="dropdown me-3 position-static" runat="server" id="divNoti" visible="false">
+                            <button class="icon-button position-relative"
+                                type="button" id="notificationDropdown"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                <i id="bellIcon" class="bi bi-bell-fill fs-5"></i>
+                                <span id="notificationCount"
+                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0
+                                </span>
+                            </button>
+
+                            <div class="dropdown-menu notification-panel"
+                                aria-labelledby="notificationDropdown">
+                                <div class="notification-header">
+                                    <span>Notifications</span>
+                                    <a href="/Admin/Notifications.aspx" class="small text-primary">View All</a>
+                                </div>
+                                <div id="notificationList" class="notification-body"></div>
+                            </div>
+                        </div>
+
+                        <div class="dropdown position-relative">
+                            <button class="profile-button dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="divAvatar" runat="server" class="avatar-circle">A</span>
+                                <span id="spnUserName" runat="server" class="profile-name d-none d-sm-inline" style="padding: 5px;">Admin</span>
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="/Admin/ProfilePage.aspx">My Profile</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="../Login.aspx">Sign out</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            <main class="dashboard-content">
+                <div class="container-fluid px-3 px-lg-4 py-4">
+                    <form id="mainForm" runat="server">
+                        <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+                        </asp:ContentPlaceHolder>
+                    </form>
+                </div>
+            </main>
+            <br />
+            <br />
+            <br />
+            <br />
+            <footer class="admin-footer">
+                <div class="container-fluid px-3 px-lg-4 fw-bolder">
+                    <span>Copyright @2026 Acryshade Laminates Pvt. Ltd.
+                       
+                        <br>
+                        Developed by <a target="_blank" class="fw-bold text-success" href="https://www.weblinkservices.net/">Web Link Services Pvt. Ltd.</a></span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="../Content/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="../Content/assets/js/main.js"></script>
+    <script src="../Content/assets/js/customebynikhil.js"></script>
+    <script type="text/javascript">
+        function loadNotifications() {
+            $.ajax({
+                type: "POST",
+                url: "/Admin/Dashboard.aspx/GetNotifications",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+
+                    const data = response.d || [];
+                    const list = document.getElementById('notificationList');
+                    const count = document.getElementById('notificationCount');
+
+                    const bell = document.getElementById("bellIcon");
+
+                    const currentCount = data.length || 0;
+                    count.innerText = currentCount;
+
+                    // 🔴 Continuous alert only based on count
+                    if (bell) {
+                        if (currentCount > 0) {
+                            bell.classList.add("bell-alert");
+                        } else {
+                            bell.classList.remove("bell-alert");
+                        }
+                    }
+
+                    // 🔔 Optional: shake ONLY when new notifications arrive
+                    if (bell && currentCount > 0) {
+                        bell.classList.remove("bell-animate");
+
+                        // restart animation
+                        void bell.offsetWidth;
+
+                        bell.classList.add("bell-animate");
+                    }
+
+
+                    let html = '';
+
+                    if (data.length === 0) {
+                        html += `
+                        <li>
+                            <span class="dropdown-item-text text-muted">
+                                No notifications
+                            </span>
+                        </li>`;
+                    }
+                    else {
+                        data.forEach(function (item) {
+                            html += `
+                        <div class="notification-item order-cardss"
+                             data-orderid="${item.Id}">
+
+                            <div class="notification-order">
+                                📦 ${item.orderId}
+                            </div>
+
+                            <div class="notification-dealer">
+                                ${item.dealerName}
+                            </div>
+
+                            <div class="notification-meta">
+                                Products: ${item.totalProducts}
+                                &nbsp;|&nbsp;
+                                Qty: ${item.productQty}
+                            </div>
+
+                            <div class="notification-time">
+                                ${item.orderDate}
+                                ${item.holdStatus === "ON HOLD" ? ` &nbsp;|&nbsp; <small style="color:#ff0000;"><b>ON HOLD</b></small>` : ""}           
+                            </div>
+                        </div>`;
+                        });
+                    }
+
+                    list.innerHTML = html;
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error loading notifications:", error);
+                }
+            });
+        }
+
+        $(document).on('click', '.order-cardss', function () {
+            var orderId = $(this).data('orderid');
+
+            window.location.href =
+                '/Admin/Notifications.aspx?OrderID=' + orderId;
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadNotifications();
+
+            // Refresh every minute
+            setInterval(loadNotifications, 60000);
+        });
+    </script>
+</body>
+</html>
