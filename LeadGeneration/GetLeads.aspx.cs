@@ -19,7 +19,6 @@ public partial class GetLeads : System.Web.UI.Page
        
     }
 
-
     [WebMethod]
     public static string GenerateLongToken()
     {
@@ -163,7 +162,8 @@ public partial class GetLeads : System.Web.UI.Page
                 }
             }
 
-            return "Processed " + totalLeadsProcessed + " lead(s) successfully.";
+            //return "Processed " + totalLeadsProcessed + " lead(s) successfully.";
+            return "Processed lead(s) fetched successfully.";
         }
     }
 
