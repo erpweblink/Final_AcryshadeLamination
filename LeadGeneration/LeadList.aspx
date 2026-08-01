@@ -572,9 +572,7 @@
             });
 
             $("#btnSyncLeads").click(function () {
-
                 $("#syncStatus").html("<span class='text-primary'>Syncing...</span>");
-
                 $.ajax({
                     type: "POST",
                     url: "GetLeads.aspx/GenerateLongToken",   // Change path if needed
@@ -600,7 +598,6 @@
                     }
 
                 });
-
             });
         });
 

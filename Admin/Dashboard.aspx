@@ -677,17 +677,35 @@
 
                 var item = data[0];
 
-                var percentage = item.PackagingPercentage || "0%";
-                var completed = item.PackagingSqFeet || 0;
-                var allocated = item.AllocatedSqFeet || 0;
+                var percentage = item.PackagingPercentage || "0.00%";
+                var displayText = item.DisplayText || "<b>Sq.Ft</b> (0/0)&nbsp;&nbsp; <b>Qty</b> (0/0)";
 
-                html = percentage + " (" + completed + " / " + allocated + ")";
+                html = "<span class='packaging-percentage'>" + percentage + "</span><br/>" +
+                    "<span class='packaging-text'>" + displayText + "</span>";
+
             }
             else {
-                html = "0% (0 / 0)";
+                html = "<span class='packaging-percentage'>0.00%</span><br/>" +
+                    "<span class='packaging-text'><b>Sq.Ft</b> (0/0)&nbsp;&nbsp; <b>Qty</b> (0/0)</span>";
             }
 
             $("#lblPackaging").html(html);
+
+            // Manage CSS here
+            $("#lblPackaging .packaging-percentage").css({
+                "font-size": "17px",
+                "font-weight": "900",
+                "font-family": "Arial, sans-serif"
+            });
+
+            $("#lblPackaging .packaging-text").css({
+                "font-size": "12px",
+                "font-family": "Arial, sans-serif"
+            });
+
+            $("#lblPackaging .packaging-text b").css({
+                "font-weight": "bold"
+            });
         }
 
         function bindOrders(data) {
@@ -695,11 +713,11 @@
                 return;
             var item = data[0];
 
-            $("#lblNewOrders").text(item.NewOrdersCount + " (" + item.NewOrdersSqFeet + " SqFeet)");
-            $("#lblPendingOrders").text(item.PendingOrdersCount + " (" + item.PendingOrdersSqFeet + " SqFeet)");
-            $("#lblOverDueOrders").text(item.OverDueOrdersCount + " (" + item.OverDueOrdersSqFeet + " SqFeet)");
+            $("#lblNewOrders").text(item.NewOrders + " (" + item.NewOrdersSqFeet + " SqFeet)");
+            $("#lblPendingOrders").text(item.PendingOrders + " (" + item.PendingOrdersSqFeet + " SqFeet)");
+            $("#lblOverDueOrders").text(item.OverDueOrders + " (" + item.OverDueOrdersSqFeet + " SqFeet)");
 
-            var totalCount = parseInt(item.NewOrdersCount || 0) + parseInt(item.PendingOrdersCount || 0) + parseInt(item.OverDueOrdersCount || 0);
+            var totalCount = parseInt(item.NewOrders || 0) + parseInt(item.PendingOrders || 0) + parseInt(item.OverDueOrders || 0);
             var totalSqFeet = parseFloat(item.NewOrdersSqFeet || 0) + parseFloat(item.PendingOrdersSqFeet || 0) + parseFloat(item.OverDueOrdersSqFeet || 0);
 
             $("#lblTotalOrders").text(totalCount + " (" + totalSqFeet + " SqFeet)");
