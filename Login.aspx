@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="../Content/assets/css/login.css">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.9/dist/sweetalert2.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.9/dist/sweetalert2.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <style>
         /* --- Forgot password panel styles (kept local so nothing in login.css needs to change) --- */
         .fp-step {
@@ -201,6 +202,29 @@
     </form>
 
     <script type="text/javascript">
+
+        document.addEventListener('DOMContentLoaded', function () {
+            LoadLeads();
+
+            // Refresh every minute
+            setInterval(LoadLeads, 80000);
+        });
+
+        function LoadLeads() {
+            $.ajax({
+                type: "POST",
+                url: "LeadGeneration/GetLeads.aspx/GenerateLongToken",   // Change path if needed
+                data: "{}",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (response) {
+                },
+                error: function (xhr) {
+                }
+            });
+        }
+
+
         (function () {
             var loginSection = document.getElementById("loginSection");
             var forgotSection = document.getElementById("forgotSection");
@@ -391,7 +415,7 @@
                 );
             });
         })();
-    
+
    </script>
 </body>
 </html>

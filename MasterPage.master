@@ -359,8 +359,7 @@
             <br />
             <footer class="admin-footer">
                 <div class="container-fluid px-3 px-lg-4 fw-bolder">
-                    <span>Copyright @2026 Acryshade Laminates Pvt. Ltd.
-                       
+                    <span>Copyright @2026 Acryshade Laminates Pvt. Ltd.            
                         <br>
                         Developed by <a target="_blank" class="fw-bold text-success" href="https://www.weblinkservices.net/">Web Link Services Pvt. Ltd.</a></span>
                 </div>
@@ -372,23 +371,7 @@
     <script src="../Content/assets/js/main.js"></script>
     <script src="../Content/assets/js/customebynikhil.js"></script>
     <script type="text/javascript">
-
-        function LoadLeads() {
-            $.ajax({
-                type: "POST",
-                url: "GetLeads.aspx/GenerateLongToken",   // Change path if needed
-                data: "{}",
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function (response) {
-                },
-                error: function (xhr) {
-                    $("#syncStatus").html("<span class='text-danger'>Sync Failed</span>");
-                    alert(xhr.responseText);
-                }
-            });
-        }
-
+  
         function loadNotifications() {
             $.ajax({
                 type: "POST",
@@ -484,7 +467,6 @@
 
             // Refresh every minute
             setInterval(loadNotifications, 60000);
-            setInterval(LoadLeads, 80000);
         });
     </script>
 </body>
