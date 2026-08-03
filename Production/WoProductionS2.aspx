@@ -150,6 +150,39 @@
             .slider.round:before {
                 border-radius: 50%;
             }
+
+        /*CSS fro Image Pop UP*/
+        .product-image-preview {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+
+        .image-popup {
+            display: none;
+            position: fixed; /* important */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 99999;
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 25px rgba(0,0,0,.4);
+        }
+
+            .image-popup img {
+                max-width: 600px;
+                max-height: 500px;
+                width: auto;
+                height: auto;
+            }
+
+        /*END*/
     </style>
     <script type="text/javascript">
         var AssignWorkOrders = [];
@@ -260,7 +293,7 @@
                 $("#woContainer").html("");
                 //return; // stop here — nothing to load, nothing to transfer
             } else {
-                hasAssignedOperator = true; 
+                hasAssignedOperator = true;
 
                 var html = `
                 <div class="row mb-3">
@@ -471,6 +504,9 @@
                             originalQty: parseFloat(row.totQty),
                             originalsqFeet: parseFloat(row.SqFeet || 0),
 
+                            description: row.Description,
+                            uploadedImage: row.UploadedImage,
+
                             allocatedQty: parseFloat(row.AllocatedQty || 0),
                             allocatedSqFeet: parseFloat(row.AllocatedSqFeet || 0),
 
@@ -621,6 +657,8 @@
             html += "<tr>";
             html += "<th>Product</th>";
             html += "<th>Size</th>";
+            html += "<th>Description</th>";
+            html += "<th>Image</th>";
             html += "<th>Original SqFt</th>";
             html += "<th>Original Qty</th>";
             html += "<th>Assigned SqFt</th>";
@@ -630,10 +668,30 @@
             html += "</tr>";
 
             $.each(wo.details, function (i, item) {
+                var image = item.uploadedImage
+                    ? item.uploadedImage
+                    : 'https://placehold.co/400x400?text=Image';
+
                 html += "<tr>";
 
                 html += "<td>" + item.product + "</td>";
                 html += "<td>" + item.size + "</td>";
+                html += "<td>" + (item.description || '') + "</td>";
+
+                html += `<td>`;
+                if (item.uploadedImage) {
+                    html += `<div class="image-hover-container">
+                       <img src="${image}"
+                            class="product-image-preview"
+                            width="45" height="45"
+                            style="object-fit:cover; border-radius:4px; cursor:pointer;"
+                            onclick="openImage('${image}')" />
+                    </div>`;
+                } else {
+                    html += `No Image`;
+                }
+                html += `</td>`;
+
                 html += "<td>" + item.originalsqFeet + "</td>";
                 html += "<td>" + item.originalQty + "</td>";
                 html += "<td>" + item.allocatedSqFeet + "</td>";
@@ -699,6 +757,44 @@
 
             $("#details_" + woId).html(html);
         }
+
+        function openImage(src) {
+            // Show the modal
+            $("#modalImg").attr("src", src);
+            $("#imageModal").fadeIn();
+
+            // Important: stop the click event from bubbling up
+            // so the same click doesn't trigger the close handler
+            event.stopPropagation();
+        }
+
+        // Close when clicking the background (outside the image)
+        $(document).on("click", "#imageModal", function (e) {
+            if (e.target === this) {
+                $(this).fadeOut();
+            }
+        });
+
+        // Prevent clicks on the image itself from closing the modal
+        $(document).on("click", "#modalImg", function (e) {
+            e.stopPropagation();
+        });
+
+        // Close when clicking anywhere else in the page (like table cells)
+        $(document).on("click", function (e) {
+            if ($("#imageModal").is(":visible") &&
+                !$(e.target).closest("#modalImg").length &&
+                !$(e.target).closest("#imageModal").length) {
+                $("#imageModal").fadeOut();
+            }
+        });
+
+        // Optional: close with ESC key
+        $(document).on("keyup", function (e) {
+            if (e.key === "Escape") {
+                $("#imageModal").fadeOut();
+            }
+        });
 
         function showMinusPanel(woId, index) {
 
@@ -919,6 +1015,9 @@
                     <div class="box">
                         <div class="table-responsive">
                             <div id="woContainer"></div>
+                        </div>
+                        <div id="imageModal" class="image-popup">
+                            <img id="modalImg" src="" />
                         </div>
                     </div>
                 </div>

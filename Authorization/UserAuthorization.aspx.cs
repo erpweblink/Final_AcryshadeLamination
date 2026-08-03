@@ -1,14 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Web.UI.WebControls;
-
+using System.Web.Script.Serialization;
+using System.Web.Services;
 
 public partial class UserAuthorization : System.Web.UI.Page
 {
-    SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString);
-    CommonCls objcls = new CommonCls();
+    // Kept only for the access-check on Page_Load - all data operations for
+    // the grid now happen through static WebMethods, which open their own connections.
+    private static string ConStr
+    {
+        get { return ConfigurationManager.ConnectionStrings["constr"].ConnectionString; }
+    }
 
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -20,196 +25,224 @@ public partial class UserAuthorization : System.Web.UI.Page
         {
             if (!IsPostBack)
             {
-                //Check if you has access to the page of not
+                // Check if the current user has access to this page
+                if (Session["Role"].ToString() != "Admin")
                 {
-                    if (Session["Role"].ToString() != "Admin")
+                    string username = Session["ID"].ToString();
+                    using (SqlConnection cons = new SqlConnection(ConStr))
                     {
-                        string username = Session["ID"].ToString();
-                        using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+                        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'UserAuthorization.aspx'";
+                        SqlCommand cmds = new SqlCommand(query, cons);
+                        cmds.Parameters.AddWithValue("@UserID", username);
+                        cons.Open();
+                        object result = cmds.ExecuteScalar();
+                        if (result == null || result.ToString() != "True")
                         {
-                            string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'UserAuthorization.aspx'";
-                            SqlCommand cmds = new SqlCommand(query, cons);
-                            cmds.Parameters.AddWithValue("@UserID", username);
-                            cons.Open();
-                            object result = cmds.ExecuteScalar();
-                            if (result == null || result.ToString() != "True")
-                            {
-                                Response.Redirect("/AccessDenied.aspx");
-                            }
+                            Response.Redirect("/AccessDenied.aspx");
                         }
-                    }         
+                    }
                 }
-
-                BindRole();
-                GridDiv.Visible = false;
+                // Everything else (roles, users, grid) is now loaded client-side via PageMethods.
             }
         }
     }
 
-    protected void BindRole()
+    // ---------------------------------------------------------------------
+    // WebMethods - these are static, so they can be called directly from
+    // JavaScript via PageMethods.MethodName(...) without a postback.
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// JavaScriptSerializer cannot serialize a DataTable directly - it carries
+    /// internal references (Site, Container, ExtendedProperties, etc.) that
+    /// trigger "A circular reference was detected" errors. Converting each row
+    /// to a plain Dictionary&lt;string, object&gt; first avoids that entirely.
+    /// </summary>
+    private static List<Dictionary<string, object>> DataTableToList(DataTable dt)
     {
-        try
+        var list = new List<Dictionary<string, object>>();
+
+        foreach (DataRow row in dt.Rows)
         {
-            DataTable Dt = new DataTable();
-
-            SqlDataAdapter Da = new SqlDataAdapter("SELECT ID,Roles FROM tbl_RoleMaster --WHERE Roles != 'Admin' AND IsDeleted = 0",con);
-            Da.Fill(Dt);
-
-            ddlUserRole.DataTextField = "Roles";
-            ddlUserRole.DataValueField = "ID";
-            ddlUserRole.DataSource = Dt;
-            ddlUserRole.DataBind();
-
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-    }
-
-    protected void BindUser()
-    {
-        try
-        {
-            ddlUserName.Items.Clear();
-
-            DataTable Dt = new DataTable();
-
-            SqlDataAdapter Da = new SqlDataAdapter("SELECT ID,FullName FROM tbl_UserMaster WHERE UserRole='" + ddlUserRole.SelectedItem.Text + "' AND IsDeleted=0 AND IsActivate=1", con);
-            Da.Fill(Dt);
-            ddlUserName.DataTextField = "FullName";
-            ddlUserName.DataValueField = "ID";
-            ddlUserName.DataSource = Dt;
-            ddlUserName.DataBind();
-
-            ddlUserName.Items.Insert(0, new ListItem("--Select User--", ""));
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-    }
-
-    protected void ddlUserRole_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        if (ddlUserRole.SelectedValue != "")
-        {
-            BindUser();
-            GridDiv.Visible = false;
-        }
-    }
-
-    protected void ddlUserName_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        try
-        {
-            GridDiv.Visible = true;
-
-            gvUserAuthorization.DataSource = null;
-            gvUserAuthorization.DataBind();
-
-            DataTable Dt = new DataTable();
-            SqlDataAdapter Da = new SqlDataAdapter("SELECT TOP 3 * FROM tbl_UserRoleAuthorization WHERE UserID='" + ddlUserName.SelectedValue + "'", con);
-            Da.Fill(Dt);
-            if (Dt.Rows.Count > 0)
+            var dict = new Dictionary<string, object>();
+            foreach (DataColumn col in dt.Columns)
             {
-                btnSubmit.Text = "Update";
-                DataTable Dtt = new DataTable();
-                SqlDataAdapter Daa = new SqlDataAdapter("SELECT UR.ID AS UID,AP.ID AS MenuId,AP.MenuName AS MenuName, " +
-                    " AP.PageName AS PageName ,UR.UserID AS UserRoleID ,UR.PageAccess AS PageAccess," +
-                    " UR.PagesButtonAccess AS PageButtonAccess FROM tbl_AuthPages AP " +
-                    " LEFT JOIN tbl_UserRoleAuthorization UR ON AP.ID = UR.MenuId" +
-                    " AND UR.UserID ='" + ddlUserName.SelectedValue + "' ORDER BY AP.ID", con);
-                Daa.Fill(Dtt);
-                gvUserAuthorization.EmptyDataText = "No Records Found";
-                gvUserAuthorization.DataSource = Dtt;
-                gvUserAuthorization.DataBind();
-
+                object value = row[col];
+                dict[col.ColumnName] = (value == DBNull.Value) ? null : value;
             }
-            else
-            {
-                btnSubmit.Text = "Save";
-                DataTable Dttt = new DataTable();
-                SqlDataAdapter Daaa = new SqlDataAdapter("SELECT ID AS UID,ID AS MenuId,MenuName AS MenuName, PageName AS PageName ,'' AS PageAccess,'' AS PageButtonAccess FROM tbl_AuthPages", con);
-                Daaa.Fill(Dttt);
-                gvUserAuthorization.EmptyDataText = "No Records Found";
-                gvUserAuthorization.DataSource = Dttt;
+            list.Add(dict);
+        }
 
-                gvUserAuthorization.DataBind();
-            }
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        return list;
     }
 
-    protected void gvUserAuthorization_RowDataBound(object sender, GridViewRowEventArgs e)
+    [WebMethod]
+    public static string GetRoles()
     {
-        if (e.Row.RowType == DataControlRowType.DataRow)
+        DataTable dt = new DataTable();
+        using (SqlConnection con = new SqlConnection(ConStr))
         {
-            CheckBox chkpages = (CheckBox)e.Row.FindControl("chkPages");
-            CheckBox chkpagesview = (CheckBox)e.Row.FindControl("chkPagesView");
-
-            Label PageAccess = (Label)e.Row.FindControl("lblPageAccess");
-            Label PagesButtonAccess = (Label)e.Row.FindControl("lblPageButtonAccess");
-
-            chkpages.Checked = PageAccess.Text == "True" ? true : false;
-            chkpagesview.Checked = PagesButtonAccess.Text == "True" ? true : false;
+            SqlDataAdapter da = new SqlDataAdapter(
+                "SELECT ID, Roles FROM tbl_RoleMaster WHERE IsDeleted = 0", con);
+            da.Fill(dt);
         }
+
+        var serializer = new JavaScriptSerializer();
+        return serializer.Serialize(DataTableToList(dt));
     }
 
-    protected void btnSubmit_Click(object sender, EventArgs e)
+    /// <summary>
+    /// Returns every user for a given role, tagged with a Status of "Pending" (no rows yet
+    /// in tbl_UserRoleAuthorization) or "Completed" (already has at least one row).
+    /// Filtering/searching is done client-side against this full list so switching
+    /// between All/Pending/Completed or typing a search term is instant, with no
+    /// extra server round-trip.
+    /// </summary>
+    [WebMethod]
+    public static string GetUsers(string roleId)
     {
-        try
+        DataTable dt = new DataTable();
+
+        string query = @"
+            SELECT U.ID, U.FullName,
+                   CASE WHEN EXISTS (
+                        SELECT 1 FROM tbl_UserRoleAuthorization UR WHERE UR.UserID = U.ID
+                   ) THEN 'Completed' ELSE 'Pending' END AS Status
+            FROM tbl_UserMaster U
+            WHERE U.UserRole = (SELECT Roles FROM tbl_RoleMaster WHERE ID = @RoleId)
+              AND U.IsDeleted = 0 AND U.IsActivate = 1
+            ORDER BY U.FullName";
+
+        using (SqlConnection con = new SqlConnection(ConStr))
         {
-            if (btnSubmit.Text == "Update")
-            {
-                SqlCommand cmd = new SqlCommand("SP_AuthorizationMaster", con);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@UserID", ddlUserName.SelectedItem.Value);
-                cmd.Parameters.AddWithValue("@SP_Action", "AuthorizationDelete");
-                con.Open();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            }
-
-            foreach (GridViewRow g1 in gvUserAuthorization.Rows)
-            {
-                string menuname = (g1.FindControl("lblMenuName") as Label).Text;
-                string pagename = (g1.FindControl("lblPageName") as Label).Text;
-                string menu = (g1.FindControl("lblMenuId") as Label).Text;
-                int userId = Convert.ToInt32(ddlUserName.SelectedValue);
-                bool pageChk = (g1.FindControl("chkPages") as CheckBox).Checked;
-                bool pageviewChk = (g1.FindControl("chkPagesView") as CheckBox).Checked;
-
-                SqlCommand cmd = new SqlCommand("SP_AuthorizationMaster", con);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@UserID", ddlUserName.SelectedItem.Value);
-                cmd.Parameters.AddWithValue("@UserName", ddlUserName.SelectedItem.Text);
-                cmd.Parameters.AddWithValue("@MenuId", menu);
-                cmd.Parameters.AddWithValue("@MenuName", menuname);
-                cmd.Parameters.AddWithValue("@PageName", pagename);
-                cmd.Parameters.AddWithValue("@PageAccess", pageChk);
-                cmd.Parameters.AddWithValue("@PagesButtonAccess", pageviewChk);
-                cmd.Parameters.AddWithValue("@ActionBy", Session["ID"].ToString());
-                cmd.Parameters.AddWithValue("@SP_Action", "AuthorizationInsert");
-                con.Open();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            }
-
-            Session["message"] = "User Authorization created successfully.";
-            Session["icon"] = "success";
-            Session["time"] = "2000";
-            Session["url"] = "/Authorization/UserAuthorization.aspx";
-            Response.Redirect("/Alerts.aspx");
+            SqlCommand cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
         }
-        catch (Exception)
+
+        var serializer = new JavaScriptSerializer();
+        return serializer.Serialize(DataTableToList(dt));
+    }
+
+    /// <summary>
+    /// Returns every page in tbl_AuthPages, left-joined against whatever
+    /// authorization the selected user already has (if any).
+    /// </summary>
+    [WebMethod]
+    public static string GetUserPages(string userId)
+    {
+        DataTable dt = new DataTable();
+
+        string query = @"
+            SELECT AP.ID AS MenuId,
+                   AP.MenuName AS MenuName,
+                   AP.PageName AS PageName,
+                   ISNULL(UR.PageAccess, 'False') AS PageAccess,
+                   ISNULL(UR.PagesButtonAccess, 'False') AS PageButtonAccess
+            FROM tbl_AuthPages AP
+            LEFT JOIN tbl_UserRoleAuthorization UR
+                   ON AP.ID = UR.MenuId AND UR.UserID = @UserId
+            ORDER BY AP.ID";
+
+        using (SqlConnection con = new SqlConnection(ConStr))
         {
-            throw;
+            SqlCommand cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
         }
+
+        var serializer = new JavaScriptSerializer();
+        return serializer.Serialize(DataTableToList(dt));
+    }
+
+    /// <summary>
+    /// Upserts one row per page for the selected user:
+    ///  - if a row already exists for (UserId, MenuId) -> UPDATE just the access flags
+    ///  - otherwise -> INSERT a new row
+    /// This replaces the old "delete everything then re-insert" approach, so the
+    /// int identity column no longer gets burned through on every save.
+    /// </summary>
+    [WebMethod(EnableSession = true)]
+    public static string SaveAuthorization(string userId, string userName, string pagesJson)
+    {
+        var serializer = new JavaScriptSerializer();
+        List<Dictionary<string, object>> pages = serializer.Deserialize<List<Dictionary<string, object>>>(pagesJson);
+
+        string actionBy = HttpContextCurrentUserId();
+
+        using (SqlConnection con = new SqlConnection(ConStr))
+        {
+            con.Open();
+
+            foreach (var p in pages)
+            {
+                int menuId = Convert.ToInt32(p["MenuId"]);
+                string menuName = Convert.ToString(p["MenuName"]);
+                string pageName = Convert.ToString(p["PageName"]);
+                bool pageAccess = Convert.ToBoolean(p["PageAccess"]);
+                bool pageButtonAccess = Convert.ToBoolean(p["PageButtonAccess"]);
+
+                // Does a row already exist for this user + menu?
+                SqlCommand chk = new SqlCommand(
+                    "SELECT COUNT(1) FROM tbl_UserRoleAuthorization WHERE UserID = @UserId AND MenuId = @MenuId", con);
+                chk.Parameters.AddWithValue("@UserId", userId);
+                chk.Parameters.AddWithValue("@MenuId", menuId);
+                int existingCount = (int)chk.ExecuteScalar();
+
+                if (existingCount > 0)
+                {
+                    SqlCommand upd = new SqlCommand(@"
+                        UPDATE tbl_UserRoleAuthorization
+                        SET PageAccess = @PageAccess,
+                            PagesButtonAccess = @PageButtonAccess,
+                            CreatedBy = @ActionBy
+                        WHERE UserID = @UserId AND MenuId = @MenuId", con);
+
+                    upd.Parameters.AddWithValue("@PageAccess", pageAccess);
+                    upd.Parameters.AddWithValue("@PageButtonAccess", pageButtonAccess);
+                    upd.Parameters.AddWithValue("@ActionBy", actionBy);
+                    upd.Parameters.AddWithValue("@UserId", userId);
+                    upd.Parameters.AddWithValue("@MenuId", menuId);
+                    upd.ExecuteNonQuery();
+                }
+                else
+                {
+                    SqlCommand ins = new SqlCommand(@"
+                        INSERT INTO tbl_UserRoleAuthorization
+                            (UserID, UserName, MenuId, MenuName, PageName, PageAccess, PagesButtonAccess, CreatedBy)
+                        VALUES
+                            (@UserId, @UserName, @MenuId, @MenuName, @PageName, @PageAccess, @PageButtonAccess, @ActionBy)", con);
+
+                    ins.Parameters.AddWithValue("@UserId", userId);
+                    ins.Parameters.AddWithValue("@UserName", userName);
+                    ins.Parameters.AddWithValue("@MenuId", menuId);
+                    ins.Parameters.AddWithValue("@MenuName", menuName);
+                    ins.Parameters.AddWithValue("@PageName", pageName);
+                    ins.Parameters.AddWithValue("@PageAccess", pageAccess);
+                    ins.Parameters.AddWithValue("@PageButtonAccess", pageButtonAccess);
+                    ins.Parameters.AddWithValue("@ActionBy", actionBy);
+                    ins.ExecuteNonQuery();
+                }
+            }
+        }
+
+        return "Success";
+    }
+
+    /// <summary>
+    /// WebMethods are static, so they can't read the instance Session/HttpContext
+    /// the way normal event handlers do. HttpContext.Current still works fine
+    /// inside a WebMethod though, so we use that to get the current admin's ID.
+    /// </summary>
+    private static string HttpContextCurrentUserId()
+    {
+        var ctx = System.Web.HttpContext.Current;
+        if (ctx != null && ctx.Session != null && ctx.Session["ID"] != null)
+        {
+            return ctx.Session["ID"].ToString();
+        }
+        return null;
     }
 }
-
-

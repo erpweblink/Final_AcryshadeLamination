@@ -15,26 +15,33 @@ public partial class EnquiryList : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
-        if (!IsPostBack)
+        if (Session["UserCode"] == null)
         {
-            //Check if you has access to the page of not
-            //{
-            //    string username = Session["ID"].ToString();
-            //    using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
-            //    {
-            //        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'EnquiryList.aspx'";
-            //        SqlCommand cmds = new SqlCommand(query, cons);
-            //        cmds.Parameters.AddWithValue("@UserID", username);
-            //        cons.Open();
-            //        object result = cmds.ExecuteScalar();
-            //        if (result == null || result.ToString() != "True")
-            //        {
-            //            Response.Redirect("/AccessDenied.aspx");
-            //        }
-            //    }
-            //}
+            Response.Redirect("../Login.aspx");
+        }
+        else
+        {
+            if (!IsPostBack)
+            {
+                //Check if you has access to the page of not
+                {
+                    string username = Session["ID"].ToString();
+                    using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+                    {
+                        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'EnquiryList.aspx'";
+                        SqlCommand cmds = new SqlCommand(query, cons);
+                        cmds.Parameters.AddWithValue("@UserID", username);
+                        cons.Open();
+                        object result = cmds.ExecuteScalar();
+                        if (result == null || result.ToString() != "True")
+                        {
+                            Response.Redirect("/AccessDenied.aspx");
+                        }
+                    }
+                }
 
-            GetEnqAppLeads();
+                GetEnqAppLeads();
+            }
         }
     }
 
@@ -209,7 +216,7 @@ public partial class EnquiryList : System.Web.UI.Page
             item["MobileNumber"] = row["MobileNumber"] == DBNull.Value ? "" : row["MobileNumber"].ToString();
             item["Service"] = row["message"] == DBNull.Value ? "" : row["message"].ToString();
             item["CreatedAt"] = row["EnquiryDate"] == DBNull.Value ? "" : Convert.ToDateTime(row["EnquiryDate"]).ToString("dd-MMM-yyyy");
-            item["CustomerURL"] = "" ;
+            item["CustomerURL"] = "";
             item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
             item["AssignTo"] = row["AssignTo"] == DBNull.Value ? "" : row["AssignTo"].ToString();
             item["FeedbackHistory"] = row["FeedbackHistory"] == DBNull.Value ? "" : row["FeedbackHistory"].ToString();

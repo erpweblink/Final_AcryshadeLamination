@@ -15,27 +15,34 @@ public partial class LeadList : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
-        if (!IsPostBack)
+        if (Session["UserCode"] == null)
         {
-            //Check if you has access to the page of not
+            Response.Redirect("../Login.aspx");
+        }
+        else
+        {
+            if (!IsPostBack)
             {
-                string username = Session["ID"].ToString();
-                using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+                //Check if you has access to the page of not
                 {
-                    string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'LeadList.aspx'";
-                    SqlCommand cmds = new SqlCommand(query, cons);
-                    cmds.Parameters.AddWithValue("@UserID", username);
-                    cons.Open();
-                    object result = cmds.ExecuteScalar();
-                    if (result == null || result.ToString() != "True")
+                    string username = Session["ID"].ToString();
+                    using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
                     {
-                        Response.Redirect("/AccessDenied.aspx");
+                        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'LeadList.aspx'";
+                        SqlCommand cmds = new SqlCommand(query, cons);
+                        cmds.Parameters.AddWithValue("@UserID", username);
+                        cons.Open();
+                        object result = cmds.ExecuteScalar();
+                        if (result == null || result.ToString() != "True")
+                        {
+                            Response.Redirect("/AccessDenied.aspx");
+                        }
                     }
                 }
-            }
 
-            // Initial full grid load can stay as-is, or you can leave it empty
-            // and let JS call SearchLeads("", 10) on document ready instead.
+                // Initial full grid load can stay as-is, or you can leave it empty
+                // and let JS call SearchLeads("", 10) on document ready instead.
+            }
         }
     }
 
@@ -46,7 +53,7 @@ public partial class LeadList : System.Web.UI.Page
         {
             string role = System.Web.HttpContext.Current.Session["Role"].ToString();
             string id = System.Web.HttpContext.Current.Session["ID"].ToString();
-          
+
             SqlDataAdapter da = new SqlDataAdapter("SP_MetaLead", con);
             da.SelectCommand.CommandType = CommandType.StoredProcedure;
             da.SelectCommand.Parameters.AddWithValue("@SP_Action", "LeadList");

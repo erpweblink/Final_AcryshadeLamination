@@ -16,25 +16,32 @@ public partial class WhatsAppLeads : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
-        if (!IsPostBack)
+        if (Session["UserCode"] == null)
         {
-            //Check if you has access to the page of not
+            Response.Redirect("../Login.aspx");
+        }
+        else
+        {
+            if (!IsPostBack)
             {
-                string username = Session["ID"].ToString();
-                using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+                //Check if you has access to the page of not
                 {
-                    string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'WhatsAppLeads.aspx'";
-                    SqlCommand cmds = new SqlCommand(query, cons);
-                    cmds.Parameters.AddWithValue("@UserID", username);
-                    cons.Open();
-                    object result = cmds.ExecuteScalar();
-                    if (result == null || result.ToString() != "True")
+                    string username = Session["ID"].ToString();
+                    using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
                     {
-                        Response.Redirect("/AccessDenied.aspx");
+                        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'WhatsAppLeads.aspx'";
+                        SqlCommand cmds = new SqlCommand(query, cons);
+                        cmds.Parameters.AddWithValue("@UserID", username);
+                        cons.Open();
+                        object result = cmds.ExecuteScalar();
+                        if (result == null || result.ToString() != "True")
+                        {
+                            Response.Redirect("/AccessDenied.aspx");
+                        }
                     }
                 }
+                GetWhatsAppLeads();
             }
-            GetWhatsAppLeads();
         }
     }
 
