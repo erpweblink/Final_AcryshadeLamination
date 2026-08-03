@@ -266,6 +266,12 @@
                     </a>
 
                     <div class="dropdown-menu-sidebar">
+                        <a href="/LeadGeneration/AdsDetails.aspx" class="nav-link sub-link" id="A0" runat="server" title="📋 Ad Forms">
+                            <span class="nav-icon">
+                                <i class="bi bi-ui-checks-grid"></i>
+                            </span>
+                            <span class="nav-text">Ad Form</span>
+                        </a>
                         <a href="/LeadGeneration/LeadList.aspx" class="nav-link sub-link" id="A1" runat="server" title="📣 Meta Leads">
                             <span class="nav-icon">
                                 <i class="bi bi-meta"></i>
@@ -277,6 +283,12 @@
                                 <i class="bi bi-whatsapp"></i>
                             </span>
                             <span class="nav-text">WhatsApp Leads</span>
+                        </a>
+                        <a href="/LeadGeneration/EnquiryList.aspx" class="nav-link sub-link" id="A3" runat="server" title="🌍 Website Enquiry">
+                            <span class="nav-icon">
+                                <i class="bi bi-globe2"></i>
+                            </span>
+                            <span class="nav-text">Website Enquiries</span>
                         </a>
                     </div>
                 </div>

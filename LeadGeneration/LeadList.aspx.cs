@@ -17,6 +17,23 @@ public partial class LeadList : System.Web.UI.Page
     {
         if (!IsPostBack)
         {
+            //Check if you has access to the page of not
+            {
+                string username = Session["ID"].ToString();
+                using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+                {
+                    string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID AND PageName = 'LeadList.aspx'";
+                    SqlCommand cmds = new SqlCommand(query, cons);
+                    cmds.Parameters.AddWithValue("@UserID", username);
+                    cons.Open();
+                    object result = cmds.ExecuteScalar();
+                    if (result == null || result.ToString() != "True")
+                    {
+                        Response.Redirect("/AccessDenied.aspx");
+                    }
+                }
+            }
+
             // Initial full grid load can stay as-is, or you can leave it empty
             // and let JS call SearchLeads("", 10) on document ready instead.
         }
@@ -121,7 +138,7 @@ public partial class LeadList : System.Web.UI.Page
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
             using (SqlCommand cmd = new SqlCommand(
-                "UPDATE tbl_MetaLeads SET AssignedTo = @DealerID,AdminSideNextReminder = @reminder WHERE ID = @ID", con))
+                "UPDATE tbl_MetaLeads SET AssignedTo = @DealerID,AssignedDate = GETDATE(),AdminSideNextReminder = @reminder WHERE ID = @ID", con))
             {
                 cmd.Parameters.AddWithValue("@DealerID", dealerId);
                 cmd.Parameters.AddWithValue("@ID", leadId);
@@ -202,7 +219,7 @@ public partial class LeadList : System.Web.UI.Page
             LEFT JOIN tbl_UserMaster UM
             ON UM.ID = MF.CreatedBy
             WHERE LeadId = @LeadId
-            AND (@Role <> 'Dealer' OR MF.CreatedBy = @ID)
+           -- AND (@Role <> 'Dealer' OR MF.CreatedBy = @ID)
             ORDER BY CreatedDate DESC", con);
 
             cmd.Parameters.AddWithValue("@LeadId", leadId);

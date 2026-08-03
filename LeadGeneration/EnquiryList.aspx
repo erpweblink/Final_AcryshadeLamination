@@ -1,7 +1,7 @@
 ﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master"
     AutoEventWireup="true"
-    CodeFile="WhatsAppLeads.aspx.cs"
-    Inherits="WhatsAppLeads" %>
+    CodeFile="EnquiryList.aspx.cs"
+    Inherits="EnquiryList" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -21,6 +21,36 @@
             padding: 24px;
             background: #fafbfd;
         }
+
+        .scroll-box {
+            max-height: 160px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px 8px;
+            line-height: 1.7;
+            width: 100%;
+            word-wrap: break-word;
+            white-space: normal;
+            font-size: 13.5px;
+        }
+
+            .scroll-box b {
+                color: #1a4fb8;
+            }
+
+            .scroll-box::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .scroll-box::-webkit-scrollbar-thumb {
+                background: #c3cbd6;
+                border-radius: 4px;
+            }
+
+            .scroll-box::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
 
         /* ===== Filter Bar ===== */
         .filter-bar {
@@ -117,7 +147,7 @@
             border-radius: 20px !important;
             text-align: center;
             text-align-last: center;
-            font-size: 13px;
+            font-size: 11px;
             letter-spacing: 0.3px;
             padding: 6px 12px !important;
             height: auto !important;
@@ -464,9 +494,8 @@
                     '<td data-label="Sr No." style="text-align:center;">' + (index + 1) + '</td>' +
                     '<td data-label="Name">' + escapeHtml(lead.Name) + '</td>' +
                     '<td data-label="Mobile Number">' + escapeHtml(lead.MobileNumber) + '</td>' +
-                    '<td data-label="Service">' + escapeHtml(lead.Service) + '</td>' +
+                    '<td data-label="Message"> <div class="scroll-box">' + escapeHtml(lead.Service) + '</div></td>' +
                     '<td data-label="Inquiry Date" class="lead-date-cell">' + escapeHtml(lead.CreatedAt) + '</td>' +
-                    '<td data-label="Website">' + urlCell + '</td>' +
                     '<td data-label="Status" style="text-align:center;">' +
                     '<select class="form-control ddl-status ' + statusClass + '" data-lead-id="' + lead.LeadID + '" onchange="UpdateLeadStatus(this);">' +
                     '<option value="" ' + (!lead.Status ? "selected" : "") + '>Select Status</option>' +
@@ -788,7 +817,7 @@
 
     <div class="card">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h3 class="m-0 font-weight-bold"><b>WhatsApp Leads List</b></h3>
+            <h3 class="m-0 font-weight-bold"><b>Website Enquiry List</b></h3>
         </div>
 
         <div class="card-body">
@@ -853,9 +882,8 @@
                             <th style="text-align: center;">Sr No.</th>
                             <th style="text-align: center;">Name</th>
                             <th style="text-align: center;">Mobile Number</th>
-                            <th style="text-align: center;">Service</th>
-                            <th style="text-align: center;">Inquiry Date</th>
-                            <th style="text-align: center;">Website</th>
+                            <th style="text-align: center;">Message</th>
+                            <th style="text-align: center;">Enquiry Date</th>
                             <th style="text-align: center;">Status</th>
                             <th style="text-align: center;">Assign Dealer</th>
                             <th style="text-align: center;">Follow Up</th>

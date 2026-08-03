@@ -327,7 +327,7 @@
                 height: 40px;
                 font-size: 16px;
                 text-align: center;
-                margin: 0;
+                margin-top: 16px;
             }
 
         /* Show a check style on already-selected options in the open dropdown */
@@ -512,7 +512,7 @@
                     // Dealer: read-only, just show the assigned dealer's name as plain text
                     var assignedDealer = dealersList.find(function (d) { return d.ID === lead.AssignedTo; });
                     var dealerName = assignedDealer ? escapeHtml(assignedDealer.DealerName) : "-";
-                    assignCellHtml = '<span class="fw-bold">' + dealerName + '</span>';
+                    assignCellHtml = '<span class="fw-bold"><i>' + dealerName + '</i></span>';
                 } else {
                     // Admin/other roles: full editable Select2 dropdown
                     var dealerOptions = '<option value="">-- Select Dealer --</option>';
@@ -629,14 +629,11 @@
                 leadId,
                 dealerId,
                 reminder,
-
                 function (msg) {
-
-                    alert(msg);
-
                     $("#assignDealerModal").modal("hide");
-
                     searchLeads();
+                    alert(msg);
+                    window.location.href = window.location.href;
                 },
 
                 function (err) {
@@ -646,6 +643,13 @@
                 });
 
         }
+
+        $(document).on('hidden.bs.modal', function () {
+            if ($('.modal:visible').length === 0) {
+                $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+            }
+        });
 
         function initDealerFilterDropdown() {
             if (currentUserRole === "Dealer") return;
@@ -723,7 +727,10 @@
             });
         }
 
+        var searchRequestId = 0;
         function searchLeads() {
+            var thisRequestId = ++searchRequestId;
+
             var searchTerm = $("#txtcompanyname").val();
             var pageSize = parseInt($("#ddlPageSize").val());
             var statusFilter = $("#ddlStatusFilter").val();
@@ -736,6 +743,7 @@
             }
 
             PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, function (result) {
+                if (thisRequestId !== searchRequestId) return;
                 renderLeadsTable(JSON.parse(result));
             }, function (error) {
                 console.error("Search failed: " + error.get_message());
@@ -745,12 +753,16 @@
         function clearFilters() {
             $("#txtcompanyname").val("");
             $("#ddlStatusFilter").val("");
-            $("#ddlAssignedFilter").val("Not Assigned");
+            if (currentUserRole === "Dealer") {
+                $("#ddlAssignedFilter").val("Assigned");
+            } else {
+                $("#ddlAssignedFilter").val("Not Assigned");
+            }
             $("#ddlPageSize").val("25");
 
             if (currentUserRole !== "Dealer" && $("#ddlDealerFilter").hasClass("select2-hidden-accessible")) {
-                $("#ddlDealerFilter").val(null).trigger("change.select2").trigger("change");
-                // triggers "change.dealerFilter" above, which calls renderDealerBadges() + searchLeads()
+                $("#ddlDealerFilter").val(null).trigger("change.select2");
+                renderDealerBadges();
             }
 
             searchLeads();
@@ -1043,8 +1055,7 @@
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
-
-                            <div class="col-md-3 d-flex justify-content-end">
+                            <div class="col-md-3 col-12 d-flex justify-content-end ms-md-auto">
                                 <div style="width: 130px;">
                                     <label class="form-label fw-bold d-block">Show</label>
                                     <select id="ddlPageSize" class="form-control">
@@ -1216,7 +1227,6 @@
                                 </div>
 
                                 <div class="modal-body">
-
                                     <input type="hidden" id="hdAssignLeadId" />
                                     <input type="hidden" id="hdDealerId" />
 
@@ -1225,11 +1235,9 @@
                                     <input type="date"
                                         id="txtAdminReminder"
                                         class="form-control" />
-
                                 </div>
 
                                 <div class="modal-footer">
-
                                     <button class="btn btn-success"
                                         onclick="SaveDealerAssignment();">
                                         Assign Dealer

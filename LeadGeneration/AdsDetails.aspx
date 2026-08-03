@@ -30,7 +30,7 @@
         <ContentTemplate>
             <div class="card">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h3 class="m-0 font-weight-bold"><b><span id="formHeaderText">Add Form</span></b></h3>
+                    <h3 class="m-0 font-weight-bold"><b><span id="formHeaderText">Ad Form</span></b></h3>
                 </div>
                 <div class="card-body">
 

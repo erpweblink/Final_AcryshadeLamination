@@ -71,7 +71,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
         {
             foreach (DataRow row in dt.Rows)
             {
-                string MenuName = row["PageName"].ToString();
+                string MenuName = string.IsNullOrWhiteSpace(row["PageName"].ToString())?"No Access": row["PageName"].ToString();
 
                 /*Dashboard*/
                 {
@@ -251,6 +251,31 @@ public partial class MasterPage : System.Web.UI.MasterPage
                     if(PTRTab.Visible== false && MDTab.Visible == false && TrenTab.Visible == false)
                     {
                         DIvRep.Visible = false;
+                    }
+                }
+                /*End*/
+
+                /*Leads*/
+                {
+                    if (MenuName == "LeadList.aspx")
+                    {
+                        string PageAccess = row["PageAccess"].ToString();
+                        A1.Visible = PageAccess == "True" ? true : false;
+                    }
+                    if (MenuName == "WhatsAppLeads.aspx")
+                    {
+                        string PageAccess = row["PageAccess"].ToString();
+                        A2.Visible = PageAccess == "True" ? true : false;
+                    }
+                    if (MenuName == "EnquiryList.aspx")
+                    {
+                        string PageAccess = row["PageAccess"].ToString();
+                        A3.Visible = PageAccess == "True" ? true : false;
+                    }
+
+                    if(A1.Visible== false && A2.Visible == false && A3.Visible == false )
+                    {
+                        DivLeads.Visible = false;
                     }
                 }
                 /*End*/
