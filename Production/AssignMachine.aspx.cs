@@ -9,7 +9,6 @@ using System.Web.UI.WebControls;
 
 public partial class AssignMachine : System.Web.UI.Page
 {
-    SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString);
     protected void Page_Load(object sender, EventArgs e)
     {
         if (Session["UserCode"] == null)
