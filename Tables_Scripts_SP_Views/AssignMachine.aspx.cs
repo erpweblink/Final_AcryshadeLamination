@@ -9,9 +9,7 @@ using System.Web.UI.WebControls;
 
 public partial class AssignMachine : System.Web.UI.Page
 {
-    protected string CurrentUserId = "";
-    protected string CurrentUserName = "";
-
+    SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString);
     protected void Page_Load(object sender, EventArgs e)
     {
         if (Session["UserCode"] == null)
@@ -20,14 +18,6 @@ public partial class AssignMachine : System.Web.UI.Page
         }
         else
         {
-            // Resolve who is logged in right now, so they can assign themselves
-            // to a machine the same way an admin assigns any other operator.
-            if (Session["ID"] != null)
-            {
-                CurrentUserId = Session["ID"].ToString();
-                CurrentUserName = GetCurrentUserFullName(CurrentUserId);
-            }
-
             if (!IsPostBack)
             {
                 //Check if you has access to the page of not
@@ -51,26 +41,6 @@ public partial class AssignMachine : System.Web.UI.Page
                 BindStages();
             }
         }
-    }
-
-    private string GetCurrentUserFullName(string userId)
-    {
-        string fullName = "You";
-
-        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
-        {
-            string query = "SELECT FullName FROM tbl_UserMaster WHERE ID = @ID";
-            SqlCommand cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@ID", userId);
-            con.Open();
-            object result = cmd.ExecuteScalar();
-            if (result != null)
-            {
-                fullName = result.ToString();
-            }
-        }
-
-        return fullName;
     }
 
     private void BindOperators()
@@ -120,12 +90,7 @@ public partial class AssignMachine : System.Web.UI.Page
                         FROM tbl_AssignedMachines L2
                         INNER JOIN tbl_UserMaster UM ON UM.ID = L2.LoginBy
                         WHERE L2.MachineId = MM.ID AND L2.LogoutTime IS NULL
-                    ) AS OperatorName,
-                    (
-                        SELECT TOP 1 L3.LoginBy
-                        FROM tbl_AssignedMachines L3
-                        WHERE L3.MachineId = MM.ID AND L3.LogoutTime IS NULL
-                    ) AS AssignedOperatorId
+                    ) AS OperatorName
                 FROM tbl_MachineMaster MM
                 INNER JOIN tbl_StageMaster SM ON MM.AllocatedStage = SM.SatgeName
                 WHERE MM.IsDeleted = 0 AND SM.IsDeleted = 0";
@@ -241,8 +206,6 @@ public partial class AssignMachine : System.Web.UI.Page
 
                         // 5. Close the TARGET OPERATOR's own session on any OTHER machine
                         //    (an operator can only be actively assigned to one machine at a time)
-                        //    This also covers the self-assign case: if the current user is
-                        //    already running another machine, that gets closed out here too.
                         string closeOperatorElsewhereQuery = @"
                             UPDATE tbl_AssignedMachines
                             SET LogoutTime = GETDATE(), LogoutBy = @AdminId
@@ -330,3 +293,5 @@ public partial class AssignMachine : System.Web.UI.Page
     }
 
 }
+
+

@@ -110,6 +110,7 @@ public partial class Dashboard : System.Web.UI.Page
         }
     }
 
+
     [System.Web.Services.WebMethod(EnableSession = true)]
     public static object SelectMachine(int machineId, int stageId, bool force)
     {
@@ -276,6 +277,9 @@ public partial class Dashboard : System.Web.UI.Page
             return new { Success = false, Message = ex.Message };
         }
     }
+
+
+
 
     [WebMethod]
     public static Dictionary<string, object> GetDashboard(string fromDate, string toDate)

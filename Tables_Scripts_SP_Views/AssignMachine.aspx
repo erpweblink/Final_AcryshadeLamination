@@ -4,7 +4,6 @@
 <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
     <style>
         .operator-card {
             display: inline-block;
@@ -26,34 +25,6 @@
             background: #2F6BFF !important;
             color: #fff !important;
             border-color: #2F6BFF !important;
-        }
-
-        /* Distinct styling so the self-assign shortcut doesn't blend in with the operator list */
-        .assign-me-card {
-            border: 2px dashed #16824f;
-            background: #eaf8f1;
-            color: #16824f;
-        }
-
-            .assign-me-card:hover {
-                border-color: #16824f;
-                border-style: solid;
-            }
-
-            .assign-me-card.operator-selected {
-                background: #16824f !important;
-                border-color: #16824f !important;
-                border-style: solid;
-                color: #fff !important;
-            }
-
-        .operator-divider {
-            display: inline-block;
-            width: 1px;
-            height: 30px;
-            background: #ddd;
-            margin: 0 10px;
-            vertical-align: middle;
         }
 
 
@@ -115,13 +86,6 @@
             color: #fff !important;
         }
 
-        /* Highlight the machine the CURRENT user is already running */
-        .machine-assigned-to-me {
-            background: #16824f !important;
-            color: #fff !important;
-            box-shadow: 0 0 0 3px rgba(22,130,79,.35);
-        }
-
         .section-title {
             font-weight: 700;
             font-size: 18px;
@@ -134,9 +98,6 @@
         var selectedOperatorId = null;
         var selectedOperatorName = null;
 
-        var currentUserId = '<%= CurrentUserId %>';
-        var currentUserName = '<%= HttpUtility.HtmlEncode(CurrentUserName) %>';
-
         function selectOperator(elem, operatorId, operatorName) {
             $(".operator-card").removeClass("operator-selected");
             $(elem).addClass("operator-selected");
@@ -145,13 +106,9 @@
             selectedOperatorName = operatorName;
         }
 
-        function isSelfAssign() {
-            return currentUserId && String(selectedOperatorId) === String(currentUserId);
-        }
-
         function assignMachine(elem, force) {
             if (!selectedOperatorId) {
-                alert("Please select an operator first, or use \"Assign to Me\" to take a machine yourself.");
+                alert("Please select an operator first.");
                 return;
             }
 
@@ -159,12 +116,10 @@
             var stageId = $(elem).data("stageid");
             var isBusy = String($(elem).data("busy")).toLowerCase() === "true";
             var busyOperator = $(elem).data("busyoperator");
-            var selfAssign = isSelfAssign();
 
             if (isBusy && !force) {
-                var confirmMsg = selfAssign
-                    ? "This machine is currently used by " + busyOperator + ". Do you want to log them out and take over this machine yourself?"
-                    : "This machine is currently used by " + busyOperator + ". Do you want to log them out and assign " + selectedOperatorName + " instead?";
+                var confirmMsg = "This machine is currently used by " + busyOperator +
+                    ". Do you want to log them out and assign " + selectedOperatorName + " instead?";
 
                 if (confirm(confirmMsg)) {
                     assignMachine(elem, true);
@@ -173,9 +128,7 @@
             }
 
             if (!isBusy && !force) {
-                var confirmAssign = confirm(selfAssign
-                    ? "Assign yourself to this machine?"
-                    : "Assign " + selectedOperatorName + " to this machine?");
+                var confirmAssign = confirm("Assign " + selectedOperatorName + " to this machine?");
                 if (!confirmAssign) return;
             }
 
@@ -202,7 +155,7 @@
                         return;
                     }
 
-                    alert(selfAssign ? "You have been assigned to this machine." : "Machine assigned successfully.");
+                    alert("Machine assigned successfully.");
                     window.location.href = window.location.href;
                 },
                 error: function (xhr) {
@@ -241,23 +194,11 @@
     </script>
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
-    <asp:ScriptManager ID="ScriptManager1" runat="server"></asp:ScriptManager>
+    <asp:ToolkitScriptManager ID="ToolkitScriptManager1" runat="server"></asp:ToolkitScriptManager>
     <asp:UpdatePanel ID="UpdatePanel1" runat="server">
         <ContentTemplate>
             <div class="section-title">Step 1: Select Operator</div>
             <div id="operatorsContainer">
-
-                <% if (!string.IsNullOrEmpty(CurrentUserId))
-                    { %>
-                <div class="operator-card assign-me-card"
-                    onclick="selectOperator(this, '<%= CurrentUserId %>', '<%= HttpUtility.HtmlEncode(CurrentUserName) %>')"
-                    title="Assign this machine to yourself">
-                    <i class="bi bi-person-check-fill me-1"></i>Assign to Me (<%= HttpUtility.HtmlEncode(CurrentUserName) %>)
-               
-                </div>
-                <span class="operator-divider"></span>
-                <% } %>
-
                 <asp:Repeater ID="rptOperators" runat="server">
                     <ItemTemplate>
                         <div class="operator-card"
@@ -279,7 +220,7 @@
                             <div class="machine-list">
                                 <asp:Repeater ID="rptMachines" runat="server">
                                     <ItemTemplate>
-                                        <div class="machine-item <%# Convert.ToBoolean(Eval("IsAssigned")) ? (Eval("AssignedOperatorId") != null && Eval("AssignedOperatorId").ToString() == CurrentUserId ? "machine-assigned-to-me" : "machine-assigned") : "machine-free" %>"
+                                        <div class="machine-item <%# Convert.ToBoolean(Eval("IsAssigned")) ? "machine-assigned" : "machine-free" %>"
                                             data-machineid='<%# Eval("MachineId") %>'
                                             data-stageid='<%# Eval("StageId") %>'
                                             data-busy='<%# Eval("IsAssigned").ToString().ToLower() %>'
@@ -290,7 +231,7 @@
                                             <%# string.IsNullOrEmpty(Eval("OperatorName").ToString()) ? "" : " (" + Eval("OperatorName") + ")" %>
                                             <div style='<%# Convert.ToBoolean(Eval("IsAssigned")) ? "": "display:none;" %>'>
                                                 <br />
-                                                <a href="javascript:void(0);" style="color: rgb(255 226 0)!important;"
+                                                <a href="javascript:void(0);"
                                                     onclick='event.stopPropagation(); unassignMachine(this,"<%# Eval("MachineId") %>")'>Remove
                                                 </a>
                                             </div>
