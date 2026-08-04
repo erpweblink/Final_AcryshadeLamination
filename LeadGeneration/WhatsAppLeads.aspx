@@ -623,6 +623,8 @@
             var pageSize = parseInt($("#ddlPageSize").val());
             var statusFilter = $("#ddlStatusFilter").val();
             var assignedFilter = $("#ddlAssignedFilter").val();
+            var fromDate = $("#txtFromDate").val();
+            var toDate = $("#txtToDate").val();
 
             var dealerFilter = "";
             if (currentUserRole !== "Dealer") {
@@ -630,7 +632,7 @@
                 dealerFilter = selectedDealers ? selectedDealers.join(",") : "";
             }
 
-            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, function (result) {
+            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, fromDate, toDate, function (result) {
                 renderLeadsTable(JSON.parse(result));
             }, function (error) {
                 console.error("Search failed: " + error.get_message());
@@ -640,6 +642,9 @@
         function clearFilters() {
             $("#txtSearch").val("");
             $("#ddlStatusFilter").val("");
+            $("#txtFromDate").val("");
+            $("#txtToDate").val("");
+
             if (currentUserRole === "Dealer") {
                 $("#ddlAssignedFilter").val("Assigned");
             } else {
@@ -681,7 +686,7 @@
                 searchLeads();
             });
 
-            $("#ddlStatusFilter").on("change", function () {
+            $("#ddlStatusFilter,#txtFromDate,#txtToDate").on("change", function () {
                 searchLeads();
             });
         });
@@ -790,14 +795,12 @@
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h3 class="m-0 font-weight-bold"><b>WhatsApp Leads List</b></h3>
         </div>
-
         <div class="card-body">
-
             <div class="filter-bar">
                 <div class="row align-items-end">
                     <div class="col-12 mb-2 mb-md-0 col-md-2">
                         <label class="form-label fw-bold">Search</label>
-                        <input type="text" id="txtSearch" class="form-control" placeholder="Search by name, mobile, service..." autocomplete="off" />
+                        <input type="text" id="txtSearch" class="form-control" placeholder="Search by name, mobile..." autocomplete="off" />
                     </div>
 
                     <div class="col-12 col-md-1 mb-2 mb-md-0">
@@ -819,17 +822,16 @@
                         </select>
                     </div>
 
-                    <div class="col-12 col-md-3 mb-2 mb-md-0" id="dealerFilterWrapper">
-                        <label class="form-label fw-bold">Dealer</label>
-                        <select id="ddlDealerFilter" class="form-control" multiple="multiple"></select>
+                    <div class="col-12 mb-2 mb-md-0 col-md-2">
+                        <label class="form-label fw-bold">From Date</label>
+                        <input type="date" id="txtFromDate" class="form-control" />
+                    </div>
+                    <div class="col-12 mb-2 mb-md-0 col-md-2">
+                        <label class="form-label fw-bold">To Date</label>
+                        <input type="date" id="txtToDate" class="form-control" />
                     </div>
 
-                    <div class="col-12 col-md-1 mb-2 mb-md-0 d-flex align-items-end">
-                        <button type="button" id="btnRefresh" class="btn btn-outline-danger" onclick="clearFilters();" title="Reset filters">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
-                    </div>
-                    <div class="col-md-3 col-12 d-flex justify-content-end ms-md-auto">
+                    <div class="col-md-3 col-12 mb-2 mb-md-0 d-flex justify-content-end ms-md-auto">
                         <div style="width: 130px;">
                             <label class="form-label fw-bold d-block">Show</label>
                             <select id="ddlPageSize" class="form-control">
@@ -839,10 +841,23 @@
                                 <option value="0">All rows</option>
                             </select>
                         </div>
+                        &nbsp;&nbsp;&nbsp;
+                      <div class="mt-4">
+                          <button type="button" id="btnRefresh" class="btn btn-outline-danger" onclick="clearFilters();" title="Reset filters">
+                              <i class="bi bi-arrow-clockwise"></i>
+                          </button>
+                      </div>
                     </div>
                 </div>
-                <div class="row align-items-center">
-                    <div id="selectedDealerBadges" class="dealer-badge-grid"></div>
+
+                <div class="row align-items-center" id="dealerFilterWrapper">
+                    <div class="col-12 col-md-3 mb-2 mb-md-0">
+                        <label class="form-label fw-bold">Dealer</label>
+                        <select id="ddlDealerFilter" class="form-control" multiple="multiple"></select>
+                    </div>
+                    <div class="col-12 col-md-9 mb-2 mb-md-0">
+                        <div id="selectedDealerBadges" class="dealer-badge-grid"></div>
+                    </div>
                 </div>
             </div>
 

@@ -569,6 +569,7 @@
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 success: function (response) {
+                    debugger;
                     let orders = response.d;
 
                     allOrdersData = orders || [];
@@ -581,8 +582,7 @@
                         $("#ddlStatusFilter").val(""); // reset filter if list becomes empty
                     }
 
-                    let selectedStatus = $("#ddlStatusFilter").val();
-                    renderOrders(allOrdersData.filter(o => o.OrderStatus === selectedStatus));
+                    renderOrders(allOrdersData);
                 },
                 error: function (err) {
                     console.log(err);

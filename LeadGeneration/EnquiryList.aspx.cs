@@ -129,7 +129,7 @@ public partial class EnquiryList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate)
     {
         string conString = ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString;
         DataTable dt = new DataTable();
@@ -193,6 +193,29 @@ public partial class EnquiryList : System.Web.UI.Page
 
                 filters.Add(string.Format("Convert(AssignTo, System.String) IN ({0})", string.Join(",", ids)));
             }
+        }
+
+        bool hasFromDate = !string.IsNullOrWhiteSpace(fromDate);
+        bool hasToDate = !string.IsNullOrWhiteSpace(toDate);
+
+        if (hasFromDate && hasToDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate >= '{0}' AND FilterDate <= '{1}'",
+                fromDate,
+                toDate));
+        }
+        else if (hasFromDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate = '{0}'",
+                fromDate));
+        }
+        else if (hasToDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate = '{0}'",
+                toDate));
         }
 
         if (filters.Count > 0)

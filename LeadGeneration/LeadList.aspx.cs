@@ -47,7 +47,7 @@ public partial class LeadList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate)
     {
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
@@ -61,6 +61,8 @@ public partial class LeadList : System.Web.UI.Page
             da.SelectCommand.Parameters.AddWithValue("@ShowRecords", pageSize);
             da.SelectCommand.Parameters.AddWithValue("@Status", statusFilter);
             da.SelectCommand.Parameters.AddWithValue("@AssignedFilter", assignedFilter);
+            da.SelectCommand.Parameters.AddWithValue("@FromDate", fromDate);
+            da.SelectCommand.Parameters.AddWithValue("@ToDate", toDate);
             da.SelectCommand.Parameters.AddWithValue("@Role", role);
             da.SelectCommand.Parameters.AddWithValue("@Id", id);
             da.SelectCommand.Parameters.AddWithValue("@DealerIds", string.IsNullOrEmpty(dealerFilter) ? (object)DBNull.Value : dealerFilter);

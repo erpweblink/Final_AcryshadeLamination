@@ -4,78 +4,105 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
     <style>
         :root {
-            --auth-accent: #5b78b1;
-            --auth-accent-dark: #465e8f;
-            --auth-pending: #e08a00;
-            --auth-pending-bg: #fff3e0;
-            --auth-completed: #1e9e5a;
-            --auth-completed-bg: #e7f8ee;
+            --auth-accent: #4a63a0;
+            --auth-accent-dark: #33477a;
+            --auth-accent-light: #7b93cc;
+            --auth-pending: #c9720a;
+            --auth-pending-bg: #ffedd6;
+            --auth-completed: #16824f;
+            --auth-completed-bg: #d9f5e5;
+            --auth-surface: #eef1f8;
+        }
+
+        /* subtle page backdrop so the card reads as elevated, not flat */
+        .auth-page-bg {
+            background: radial-gradient(circle at top left, #f3f5fc 0%, var(--auth-surface) 55%, #e6e9f4 100%);
+            padding: 4px;
+            border-radius: 16px;
         }
 
         .auth-card {
-            border: none;
+            border: 1px solid #e2e5f0;
             border-radius: 14px;
-            box-shadow: 0 2px 16px rgba(20, 30, 60, 0.08);
+            box-shadow: 0 10px 34px rgba(35, 45, 90, 0.14), 0 2px 8px rgba(35, 45, 90, 0.08);
             overflow: hidden;
-            width: 100%
+            width: 100%;
         }
 
             .auth-card .card-header {
                 background: linear-gradient(135deg, var(--auth-accent) 0%, var(--auth-accent-dark) 100%);
                 border: none;
-                padding: 1.15rem 1.5rem;
+                padding: 1.25rem 1.75rem;
+                position: relative;
             }
+
+                .auth-card .card-header::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+                    pointer-events: none;
+                }
 
         .auth-eyebrow {
             font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: .09em;
-            color: rgba(255,255,255,.75);
-            font-weight: 600;
+            letter-spacing: .12em;
+            color: rgba(255,255,255,.85);
+            font-weight: 700;
         }
 
         .auth-card .card-header h3 {
             color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,.15);
         }
 
         .auth-card .card-header i.bi {
             color: #fff;
-            font-size: 1.6rem;
+            font-size: 1.7rem;
+            background: rgba(255,255,255,.15);
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card .card-body {
+            background-color: #fdfdff;
         }
 
         /* ---- Selection controls ---- */
         .field-label {
-            font-weight: 600;
-            font-size: 13px;
+            font-weight: 700;
+            font-size: 12.5px;
             text-transform: uppercase;
-            letter-spacing: .04em;
-            color: #212529; /* Dark text */
-            margin-bottom: 6px;
+            letter-spacing: .05em;
+            color: #1f2433;
+            margin-bottom: 7px;
             display: block;
         }
 
         select.form-control,
         input.form-control {
-            border-radius: 8px;
-            border: 1px solid #dde1e8;
-            box-shadow: none;
+            border-radius: 9px;
+            border: 1.5px solid #ced2e0;
+            box-shadow: 0 1px 3px rgba(20,30,60,.05);
+            color: #1f2433 !important;
+            font-weight: 600;
+            background-color: #fff;
             transition: border-color .15s ease, box-shadow .15s ease;
         }
 
-        select.form-control,
-        input.form-control {
-            color: #212529 !important;
-            font-weight: 500;
-        }
-
             select.form-control option {
-                color: #212529;
+                color: #1f2433;
             }
 
             select.form-control:focus,
             input.form-control:focus {
                 border-color: var(--auth-accent);
-                box-shadow: 0 0 0 3px rgba(91, 120, 177, .15);
+                box-shadow: 0 0 0 3px rgba(74, 99, 160, .18);
             }
 
         /* ---- Summary strip ---- */
@@ -83,9 +110,10 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 1.75rem;
-            background: #f8f9fc;
-            border: 1px solid #eef0f5;
+            gap: 1.5rem;
+            background: #fff;
+            border: 1.5px solid #e2e5f0;
+            box-shadow: 0 3px 10px rgba(35,45,90,.06);
             border-radius: 12px;
             padding: 1rem 1.25rem;
             margin-top: 1.25rem;
@@ -93,18 +121,19 @@
         }
 
         .summary-item .summary-value {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
             line-height: 1;
-            color: #2c3345;
+            color: #1f2433;
         }
 
         .summary-item .summary-label {
             font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: .05em;
-            color: #8a90a2;
-            margin-top: 2px;
+            color: #6b7280;
+            margin-top: 3px;
         }
 
         .summary-item.completed .summary-value {
@@ -122,28 +151,36 @@
 
             .summary-progress .progress {
                 border-radius: 10px;
-                background-color: #e9ecf3;
+                background-color: #e3e6f0;
+                height: 9px !important;
             }
 
             .summary-progress .progress-bar {
-                background: linear-gradient(90deg, var(--auth-completed), #38c17a);
+                background: linear-gradient(90deg, var(--auth-completed), #2fd888);
                 transition: width .4s ease;
+            }
+
+            .summary-progress .small {
+                color: #555b6e !important;
+                font-weight: 600;
             }
 
         /* ---- User picker ---- */
         .filter-pill-group .btn {
             border-radius: 20px !important;
             font-size: 12.5px;
-            font-weight: 600;
-            padding: 5px 14px;
-            border-color: #dde1e8;
-            color: #6b7280;
+            font-weight: 700;
+            padding: 5px 16px;
+            border: 1.5px solid #ced2e0;
+            color: #4b5163;
+            background: #fff;
         }
 
             .filter-pill-group .btn.active {
                 background-color: var(--auth-accent);
                 border-color: var(--auth-accent);
                 color: #fff;
+                box-shadow: 0 2px 8px rgba(74,99,160,.35);
             }
 
         .user-search-wrap {
@@ -155,7 +192,7 @@
                 left: 12px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: #a3a9b7;
+                color: #8890a3;
             }
 
             .user-search-wrap input {
@@ -165,8 +202,10 @@
         .user-list {
             max-height: 320px;
             overflow-y: auto;
-            border: 1px solid #eef0f5;
+            border: 1.5px solid #e2e5f0;
             border-radius: 10px;
+            background: #fff;
+            box-shadow: inset 0 1px 3px rgba(20,30,60,.04);
         }
 
             .user-list::-webkit-scrollbar {
@@ -174,7 +213,7 @@
             }
 
             .user-list::-webkit-scrollbar-thumb {
-                background: #d7dbe6;
+                background: #c7cce0;
                 border-radius: 8px;
             }
 
@@ -182,9 +221,9 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 14px;
+            padding: 11px 14px;
             border: none;
-            border-bottom: 1px solid #f1f2f6;
+            border-bottom: 1px solid #eef0f7;
             cursor: pointer;
             transition: background-color .12s ease;
         }
@@ -194,19 +233,19 @@
             }
 
             .user-list-item:hover {
-                background-color: #f6f8fc;
+                background-color: #f2f4fb;
             }
 
             .user-list-item.active {
-                background-color: #eef2fb;
-                box-shadow: inset 3px 0 0 var(--auth-accent);
+                background-color: #e7ecfa;
+                box-shadow: inset 4px 0 0 var(--auth-accent);
             }
 
         .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 33px;
+            height: 33px;
             border-radius: 50%;
-            background: var(--auth-accent);
+            background: linear-gradient(135deg, var(--auth-accent), var(--auth-accent-dark));
             color: #fff;
             font-size: 12px;
             font-weight: 700;
@@ -214,29 +253,26 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-        }
-
-        .user-list-item.active .user-avatar {
-            background: var(--auth-accent-dark);
+            box-shadow: 0 2px 5px rgba(74,99,160,.3);
         }
 
         .user-name {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
-            color: #000;
+            color: #1f2433;
         }
 
         #selectedUserStatus {
-            color: #495057 !important;
-            font-weight: 500;
+            color: #4b5163 !important;
+            font-weight: 600;
         }
 
         .status-pill {
             font-size: 10.5px;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: .03em;
-            padding: 3px 9px;
+            padding: 4px 10px;
             border-radius: 20px;
             margin-left: auto;
             white-space: nowrap;
@@ -255,7 +291,7 @@
         .user-list-empty {
             padding: 28px 16px;
             text-align: center;
-            color: #a3a9b7;
+            color: #9297a8;
             font-size: 13px;
         }
 
@@ -267,55 +303,67 @@
         .selected-user-banner {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: #f6f8fc;
-            border: 1px solid #eef0f5;
+            gap: 12px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f2f4fb, #e9edf9);
+            border: 1.5px solid #dde1f0;
             border-radius: 10px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
             .selected-user-banner .user-avatar {
-                width: 36px;
-                height: 36px;
+                width: 38px;
+                height: 38px;
                 font-size: 13px;
             }
+
+        #selectedUserName {
+            color: #1f2433 !important;
+        }
 
         #tblAuth {
             border-radius: 10px;
             overflow: hidden;
+            border: 1.5px solid #e2e5f0;
         }
 
             #tblAuth thead th {
-                background-color: var(--auth-accent);
+                background: linear-gradient(135deg, var(--auth-accent), var(--auth-accent-dark));
                 color: #fff;
                 font-size: 12.5px;
                 text-transform: uppercase;
-                letter-spacing: .04em;
-                font-weight: 600;
+                letter-spacing: .05em;
+                font-weight: 700;
                 border: none;
-                padding: 12px 10px;
+                padding: 13px 10px;
             }
 
             #tblAuth tbody tr {
                 transition: background-color .12s ease;
+                background-color: #fff;
             }
 
+                #tblAuth tbody tr:nth-child(even) {
+                    background-color: #f8f9fd;
+                }
+
                 #tblAuth tbody tr:hover {
-                    background-color: #f6f8fc;
+                    background-color: #eef1fb;
                 }
 
             #tblAuth td {
-                padding: 10px;
+                padding: 11px 10px;
                 font-size: 13.5px;
-                color: #000 !important;
-                font-weight: 500;
+                color: #1f2433 !important;
+                font-weight: 600;
+                border-color: #edeff6;
             }
 
         .form-switch .form-check-input {
-            width: 2.4em;
-            height: 1.3em;
+            width: 2.5em;
+            height: 1.35em;
             cursor: pointer;
+            border: 1.5px solid #c7cce0;
         }
 
             .form-switch .form-check-input:checked {
@@ -323,23 +371,45 @@
                 border-color: var(--auth-completed);
             }
 
-        #btnSubmit {
-            border-radius: 8px;
-            font-weight: 600;
-            padding: 9px 28px;
+        .auth-footer {
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+            margin-top: 6px;
+            border-top: 1px solid #edeff6;
         }
+
+        #btnSubmit {
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 14.5px;
+            padding: 11px 40px;
+            background: linear-gradient(135deg, var(--auth-completed), #1fae63);
+            border: none;
+            box-shadow: 0 6px 16px rgba(22,130,79,.35);
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+            #btnSubmit:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 8px 20px rgba(22,130,79,.45);
+            }
+
+            #btnSubmit:disabled {
+                opacity: .75;
+            }
 
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
-            color: #a3a9b7;
+            color: #8890a3;
         }
 
             .empty-state i.bi {
-                font-size: 2.4rem;
+                font-size: 2.6rem;
                 display: block;
                 margin-bottom: .5rem;
-                color: #ccd1de;
+                color: #c3c8dc;
             }
 
         @keyframes fadeSlideIn {
@@ -369,10 +439,10 @@
             min-width: 280px;
             border-radius: 10px;
             padding: 12px 16px;
-            box-shadow: 0 8px 24px rgba(20,30,60,.15);
+            box-shadow: 0 8px 24px rgba(20,30,60,.2);
             color: #fff;
             font-size: 13.5px;
-            font-weight: 500;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -380,11 +450,11 @@
         }
 
             .auth-toast.success {
-                background: var(--auth-completed);
+                background: linear-gradient(135deg, var(--auth-completed), #1fae63);
             }
 
             .auth-toast.error {
-                background: #d9534f;
+                background: linear-gradient(135deg, #d9534f, #c0392b);
             }
     </style>
 </asp:Content>
@@ -394,109 +464,111 @@
 
     <div id="toastStack"></div>
 
-    <div class="card auth-card">
-        <div class="card-header d-flex align-items-center gap-3">
-            <i class="bi bi-shield-lock-fill"></i>
-            <div>
-                <div class="auth-eyebrow">Access Control</div>
-                <h3 class="m-0 fw-bold">User Authorization</h3>
-            </div>
-        </div>
-
-        <div class="card-body p-4">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="row g-3">
-                        <label class="field-label"><i class="bi bi-people-fill me-1"></i>User Role</label>
-                        <select id="ddlUserRole" class="form-control">
-                            <option value="">Select a role...</option>
-                        </select>
-                    </div>
-
-                    <!-- Summary strip: total / completed / pending / progress -->
-                    <div id="summaryStrip" class="summary-strip d-none">
-                        <div class="summary-item">
-                            <div class="summary-value" id="sumTotal">0</div>
-                            <div class="summary-label">Total Users</div>
-                        </div>
-                        <div class="summary-item completed">
-                            <div class="summary-value" id="sumCompleted">0</div>
-                            <div class="summary-label">Completed</div>
-                        </div>
-                        <div class="summary-item pending">
-                            <div class="summary-value" id="sumPending">0</div>
-                            <div class="summary-label">Pending</div>
-                        </div>
-                        <div class="summary-progress">
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <div class="small text-muted mt-1" id="progressLabel">0% configured</div>
-                        </div>
-                    </div>
-
-                    <!-- Searchable / filterable user picker -->
-                    <div id="userPickerDiv" class="mt-4 d-none">
-                        <label class="field-label"><i class="bi bi-person-lines-fill me-1"></i>Select User</label>
-
-                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                            <div class="btn-group filter-pill-group" role="group">
-                                <button type="button" class="btn active" data-filter="All">All</button>
-                                <button type="button" class="btn" data-filter="Pending">Pending</button>
-                                <button type="button" class="btn" data-filter="Completed">Completed</button>
-                            </div>
-                            <div class="flex-grow-1 user-search-wrap">
-                                <i class="bi bi-search"></i>
-                                <input type="text" id="userSearch" class="form-control form-control-sm" placeholder="Search by name..." />
-                            </div>
-                        </div>
-
-                        <div id="userList" class="user-list"></div>
-                    </div>
-
-                </div>
-                <div class="col-md-8">
-                    <!-- Permissions grid for the selected user -->
-                    <div id="GridDiv" class="mt-4 d-none">
-                        <div class="selected-user-banner d-flex align-items-center">
-                            <div class="user-avatar" id="selectedUserAvatar">--</div>
-                            <div>
-                                <div class="fw-bold" id="selectedUserName" style="font-size: 14px;"></div>
-                                <div class="small text-muted" id="selectedUserStatus"></div>
-                            </div>
-                            <!-- Push button to the end -->
-                            <div class="ms-auto">
-                                <button type="button" id="btnSubmit" class="btn btn-success">
-                                    <i class="bi bi-check2-circle me-1"></i><span id="btnSubmitText">Save Authorization</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="table-responsive" style="height: 562px !important;">
-                            <table id="tblAuth" class="table table-bordered mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 70px;">Sr. No.</th>
-                                        <th>Menu Name</th>
-                                        <th>Page Name</th>
-                                        <th style="width: 120px;"><i class="bi bi-eye-fill me-1"></i>Access</th>
-                                        <th style="width: 120px;"><i class="bi bi-pencil-fill me-1"></i>Edit</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tblAuthBody">
-                                </tbody>
-                            </table>
-                        </div>
-
-                    </div>
+    <div class="auth-page-bg">
+        <div class="card auth-card">
+            <div class="card-header d-flex align-items-center gap-3">
+                <i class="bi bi-shield-lock-fill"></i>
+                <div>
+                    <div class="auth-eyebrow">Access Control</div>
+                    <h3 class="m-0 fw-bold">User Authorization</h3>
                 </div>
             </div>
-            <!-- Empty state before a role is chosen -->
-            <div id="emptyState" class="empty-state">
-                <i class="bi bi-shield-lock"></i>
-                Select a role above to see its users and manage page access.
-           
-            </div>
 
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="row g-3">
+                            <label class="field-label"><i class="bi bi-people-fill me-1"></i>User Role</label>
+                            <select id="ddlUserRole" class="form-control">
+                                <option value="">Select a role...</option>
+                            </select>
+                        </div>
+
+                        <!-- Summary strip: total / completed / pending / progress -->
+                        <div id="summaryStrip" class="summary-strip d-none">
+                            <div class="summary-item">
+                                <div class="summary-value" id="sumTotal">0</div>
+                                <div class="summary-label">Total Users</div>
+                            </div>
+                            <div class="summary-item completed">
+                                <div class="summary-value" id="sumCompleted">0</div>
+                                <div class="summary-label">Completed</div>
+                            </div>
+                            <div class="summary-item pending">
+                                <div class="summary-value" id="sumPending">0</div>
+                                <div class="summary-label">Pending</div>
+                            </div>
+                            <div class="summary-progress">
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div class="small text-muted mt-1" id="progressLabel">0% configured</div>
+                            </div>
+                        </div>
+
+                        <!-- Searchable / filterable user picker -->
+                        <div id="userPickerDiv" class="mt-4 d-none">
+                            <label class="field-label"><i class="bi bi-person-lines-fill me-1"></i>Select User</label>
+
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                                <div class="btn-group filter-pill-group" role="group">
+                                    <button type="button" class="btn active" data-filter="All">All</button>
+                                    <button type="button" class="btn" data-filter="Pending">Pending</button>
+                                    <button type="button" class="btn" data-filter="Completed">Completed</button>
+                                </div>
+                                <div class="flex-grow-1 user-search-wrap">
+                                    <i class="bi bi-search"></i>
+                                    <input type="text" id="userSearch" class="form-control form-control-sm" placeholder="Search by name..." />
+                                </div>
+                            </div>
+
+                            <div id="userList" class="user-list"></div>
+                        </div>
+
+                    </div>
+                    <div class="col-md-8">
+                        <!-- Permissions grid for the selected user -->
+                        <div id="GridDiv" class="mt-4 d-none">
+                            <div class="selected-user-banner">
+                                <div class="user-avatar" id="selectedUserAvatar">--</div>
+                                <div>
+                                    <div class="fw-bold" id="selectedUserName" style="font-size: 14px;"></div>
+                                    <div class="small text-muted" id="selectedUserStatus"></div>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="height: 562px !important;">
+                                <table id="tblAuth" class="table table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 70px;">Sr. No.</th>
+                                            <th>Menu Name</th>
+                                            <th>Page Name</th>
+                                            <th style="width: 120px;"><i class="bi bi-eye-fill me-1"></i>Access</th>
+                                            <th style="width: 120px;"><i class="bi bi-pencil-fill me-1"></i>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tblAuthBody">
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state before a role is chosen -->
+                <div id="emptyState" class="empty-state">
+                    <i class="bi bi-shield-lock"></i>
+                    Select a role above to see its users and manage page access.   
+                </div>
+                <br />
+                <br />
+                <center>
+                    <button type="button" id="btnSubmit" class="btn btn-success">
+                        <i class="bi bi-check2-circle me-1"></i><span id="btnSubmitText">Save Authorization</span>
+                    </button>
+                </center>
+            </div>
         </div>
     </div>
 

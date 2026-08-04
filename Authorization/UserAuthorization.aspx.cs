@@ -8,8 +8,6 @@ using System.Web.Services;
 
 public partial class UserAuthorization : System.Web.UI.Page
 {
-    // Kept only for the access-check on Page_Load - all data operations for
-    // the grid now happen through static WebMethods, which open their own connections.
     private static string ConStr
     {
         get { return ConfigurationManager.ConnectionStrings["constr"].ConnectionString; }
@@ -47,17 +45,6 @@ public partial class UserAuthorization : System.Web.UI.Page
         }
     }
 
-    // ---------------------------------------------------------------------
-    // WebMethods - these are static, so they can be called directly from
-    // JavaScript via PageMethods.MethodName(...) without a postback.
-    // ---------------------------------------------------------------------
-
-    /// <summary>
-    /// JavaScriptSerializer cannot serialize a DataTable directly - it carries
-    /// internal references (Site, Container, ExtendedProperties, etc.) that
-    /// trigger "A circular reference was detected" errors. Converting each row
-    /// to a plain Dictionary&lt;string, object&gt; first avoids that entirely.
-    /// </summary>
     private static List<Dictionary<string, object>> DataTableToList(DataTable dt)
     {
         var list = new List<Dictionary<string, object>>();
@@ -91,13 +78,6 @@ public partial class UserAuthorization : System.Web.UI.Page
         return serializer.Serialize(DataTableToList(dt));
     }
 
-    /// <summary>
-    /// Returns every user for a given role, tagged with a Status of "Pending" (no rows yet
-    /// in tbl_UserRoleAuthorization) or "Completed" (already has at least one row).
-    /// Filtering/searching is done client-side against this full list so switching
-    /// between All/Pending/Completed or typing a search term is instant, with no
-    /// extra server round-trip.
-    /// </summary>
     [WebMethod]
     public static string GetUsers(string roleId)
     {
@@ -125,10 +105,6 @@ public partial class UserAuthorization : System.Web.UI.Page
         return serializer.Serialize(DataTableToList(dt));
     }
 
-    /// <summary>
-    /// Returns every page in tbl_AuthPages, left-joined against whatever
-    /// authorization the selected user already has (if any).
-    /// </summary>
     [WebMethod]
     public static string GetUserPages(string userId)
     {
@@ -157,13 +133,6 @@ public partial class UserAuthorization : System.Web.UI.Page
         return serializer.Serialize(DataTableToList(dt));
     }
 
-    /// <summary>
-    /// Upserts one row per page for the selected user:
-    ///  - if a row already exists for (UserId, MenuId) -> UPDATE just the access flags
-    ///  - otherwise -> INSERT a new row
-    /// This replaces the old "delete everything then re-insert" approach, so the
-    /// int identity column no longer gets burned through on every save.
-    /// </summary>
     [WebMethod(EnableSession = true)]
     public static string SaveAuthorization(string userId, string userName, string pagesJson)
     {
@@ -231,11 +200,6 @@ public partial class UserAuthorization : System.Web.UI.Page
         return "Success";
     }
 
-    /// <summary>
-    /// WebMethods are static, so they can't read the instance Session/HttpContext
-    /// the way normal event handlers do. HttpContext.Current still works fine
-    /// inside a WebMethod though, so we use that to get the current admin's ID.
-    /// </summary>
     private static string HttpContextCurrentUserId()
     {
         var ctx = System.Web.HttpContext.Current;
