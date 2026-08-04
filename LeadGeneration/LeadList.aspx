@@ -322,7 +322,6 @@
                 width: 100% !important;
                 height: 40px;
                 font-size: 16px;
-                text-align: center;
                 margin-top: 16px;
             }
 
