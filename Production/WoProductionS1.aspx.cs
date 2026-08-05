@@ -618,7 +618,7 @@ public partial class WoProductionS1 : System.Web.UI.Page
                        ON D.ID = A.ProductDtlID
                 INNER JOIN tbl_MachineProductionHDR H
                     ON H.ID = D.HeaderID
-                WHERE H.WorkOrderID = @WorkOrderID";
+                WHERE H.WorkOrderID = @WorkOrderID AND A.StageName= 'Stage 1'";
 
                 using (SqlCommand cmd = new SqlCommand(completedQuery, con))
                 {
@@ -628,7 +628,7 @@ public partial class WoProductionS1 : System.Web.UI.Page
                     totalCompletedQty = obj == DBNull.Value ? 0 : Convert.ToDecimal(obj);
                 }
 
-                if (totalCompletedQty >= originalQty && originalQty > 0)
+                if (totalCompletedQty == originalQty)
                 {
                     headerStatus = "Completed";
 

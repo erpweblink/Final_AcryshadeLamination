@@ -512,7 +512,7 @@ public partial class Dashboard : System.Web.UI.Page
     {
         var notifications = new List<Dictionary<string, object>>();
 
-        if (HttpContext.Current.Session["Role"].ToString() == "Admin")
+        if (HttpContext.Current.Session["Role"].ToString() == "Admin" || HttpContext.Current.Session["Role"].ToString() == "Sub-Admin")
         {
             string cs = ConfigurationManager.ConnectionStrings["constr"].ConnectionString;
 

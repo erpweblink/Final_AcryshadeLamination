@@ -1,4 +1,4 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" EnableEventValidation="false" AutoEventWireup="true" Async="true" CodeFile="FilesBackUpFE.aspx.cs" Inherits="FilesBackUpFE" %>
+<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" EnableEventValidation="false" AutoEventWireup="true" Async="true" CodeFile="FilesBackUpFE.aspx.cs" Inherits="FilesBackUpFE" %>
 
 
 <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
@@ -334,22 +334,16 @@
                 contentType: "application/json; charset=utf-8",
 
                 success: function (res) {
-
                     loadFiles(res.d);
-
                 },
 
                 error: function () {
-
                     Swal.fire({
                         icon: "error",
                         title: "Unable to go back"
                     });
-
                 }
-
             });
-
         });
 
         $(document).on("click", "#btnBackup", function (e) {
@@ -609,7 +603,7 @@
 
                             </h5>
 
-                            <button
+                            <button type="button"
                                 class="btn-close"
                                 data-bs-dismiss="modal">
                             </button>

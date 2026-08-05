@@ -42,7 +42,6 @@ public partial class ProfilePage : System.Web.UI.Page
     {
         string photo = "";
 
-
         SqlCommand cmd = new SqlCommand();
 
 
@@ -74,7 +73,6 @@ public partial class ProfilePage : System.Web.UI.Page
         LoadProfile();
     }
 
-
     protected void txtEmail_TextChanged(object sender, EventArgs e)
     {
         cvEmail.IsValid = true;
@@ -88,7 +86,6 @@ public partial class ProfilePage : System.Web.UI.Page
             txtUsername.Focus();
         }
     }
-
 
     private bool EmailExists(string email)
     {

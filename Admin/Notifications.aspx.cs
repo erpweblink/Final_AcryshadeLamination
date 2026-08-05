@@ -25,12 +25,12 @@ public partial class Notifications : System.Web.UI.Page
                     string username = Session["ID"].ToString();
                     using (SqlConnection cons = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
                     {
-                        string query = @"SELECT PageAccess FROM tbl_UserRoleAuthorization WHERE UserID = @UserID --AND PageName = 'PlaceOrder.aspx'";
+                        string query = @"SELECT 1 FROM tbl_UserRoleAuthorization WHERE UserID = @UserID";
                         SqlCommand cmds = new SqlCommand(query, cons);
                         cmds.Parameters.AddWithValue("@UserID", username);
                         cons.Open();
                         object result = cmds.ExecuteScalar();
-                        if (result == null || result.ToString() != "True")
+                        if (result == null)
                         {
                             Response.Redirect("/AccessDenied.aspx");
                         }

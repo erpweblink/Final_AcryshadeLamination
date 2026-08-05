@@ -1,8 +1,10 @@
+using MimeKit;
 using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Net.Mail;
+using System.ServiceModel.MsmqIntegration;
 using System.Web;
 using System.Web.Security;
 using System.Web.Services;
@@ -26,7 +28,16 @@ public partial class Login : System.Web.UI.Page
             Session["time"] = "";
             Session["url"] = "";
 
+            Session.Clear();
             Session.Abandon();
+
+            FormsAuthentication.SignOut();
+
+            Response.Cache.SetExpires(DateTime.UtcNow.AddMinutes(-1));
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
+
             // Pre-fill login form using cookies (Remember Me)
             if (Request.Cookies["Username"] != null)
                 txtUsername.Text = Request.Cookies["Username"].Value;
@@ -178,7 +189,7 @@ public partial class Login : System.Web.UI.Page
 
             HttpContext.Current.Session[SessionOtpKey] = otp;
             HttpContext.Current.Session[SessionEmailKey] = email;
-            HttpContext.Current.Session[SessionExpiryKey] = DateTime.Now.AddMinutes(5);
+            HttpContext.Current.Session[SessionExpiryKey] = DateTime.Now.AddMinutes(10);
             HttpContext.Current.Session[SessionVerifiedKey] = false;
 
             SendOtpEmail(email, otp); // TODO: configure real SMTP settings below
@@ -229,20 +240,17 @@ public partial class Login : System.Web.UI.Page
             if (sessionEmail == null || sessionEmail != email || verifiedObj == null || !(bool)verifiedObj)
                 return "OTP verification is required before resetting the password.";
 
-            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
-                return "Password must be at least 6 characters.";
+            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 4)
+                return "Password must be at least 4 characters.";
 
             if (newPassword != confirmPassword)
                 return "Password and Confirm Password do not match.";
 
-            // TODO: replace with your real update, e.g. hash + save to DB:
-            // UpdateUserPassword(email, HashPassword(newPassword));
 
-            // TODO: replace with your real lookup, e.g.:
             using (var con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
-            using (var cmd = new SqlCommand("UPDATE tbl_UserMaster SET LoginPassword=@newPassword WHERE EmailId = @Email", con))
+            using (var cmd = new SqlCommand("UPDATE tbl_UserMaster SET LoginPass=@newPassword WHERE EmailId = @Email", con))
             {
-                cmd.Parameters.Add("@newPassword", SqlDbType.VarChar, 500).Value = email.Trim();
+                cmd.Parameters.Add("@newPassword", SqlDbType.VarChar, 500).Value = confirmPassword.Trim();
                 cmd.Parameters.Add("@Email", SqlDbType.VarChar, 200).Value = email.Trim();
                 con.Open();
                 cmd.ExecuteNonQuery();
@@ -266,20 +274,33 @@ public partial class Login : System.Web.UI.Page
 
     private static void SendOtpEmail(string toEmail, string otp)
     {
-        // TODO: move these settings to Web.config <appSettings> / <mailSettings>
-        var mail = new MailMessage();
-        mail.From = new MailAddress("noreply@acryshade.com", "Acryshade Laminates");
-        mail.To.Add(toEmail);
-        mail.Subject = "Your Password Reset OTP";
-        mail.Body = "Your OTP for resetting your Acryshade Laminates account password is: " + otp +
-                    "\n\nThis code expires in 5 minutes. If you did not request this, please ignore this email.";
-        mail.IsBodyHtml = false;
-
-        using (var smtp = new SmtpClient("smtp.yourprovider.com", 587))
+        //Below details email login credentials created by NikhilMore 05/08/2026
         {
-            smtp.Credentials = new System.Net.NetworkCredential("smtp-username", "smtp-password");
-            smtp.EnableSsl = true;
-            smtp.Send(mail);
+            //Gmail Account UserName:- infoacryshadelaminates@gmail.com
+            //Password:- Info@AcryshadeLaminates1111
+            //APP Password :- sdwp xpgr hqkx dpog
+        }
+
+        // Credentials should come from config/environment variables, not hardcoded here
+        string gmailUser = "infoacryshadelaminates@gmail.com";
+        string gmailAppPassword = "sdwp xpgr hqkx dpog"; // move to config — and rotate this since it was shared
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Acryshade Laminates", gmailUser));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = "Your Password Reset OTP";
+        message.Body = new TextPart("plain")
+        {
+            Text = "Your OTP for resetting your Acryshade Laminates account password is: " + otp +
+                   "\n\nThis code expires in 10 minutes. If you did not request this, please ignore this email."
+        };
+
+        using (var client = new MailKit.Net.Smtp.SmtpClient())
+        {
+            client.Connect("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(gmailUser, gmailAppPassword);
+            client.Send(message);
+            client.Disconnect(true);
         }
     }
 }

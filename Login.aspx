@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="Login.aspx.cs" Inherits="Login" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="Login.aspx.cs" Inherits="Login" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -41,6 +41,85 @@
         #forgotSection.d-none {
             display: none !important;
         }
+
+        /* --- Button loading spinner --- */
+        .btn-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 8px;
+            animation: btn-spinner-spin 0.7s linear infinite;
+        }
+
+        @keyframes btn-spinner-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn.is-loading {
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        /* --- Show/Hide password toggle --- */
+        .password-field {
+            position: relative;
+        }
+
+            /* Reserve room on the right of the text so it never runs under the icon */
+            .password-field .form-control {
+                padding-right: 44px;
+            }
+
+        .password-toggle-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            color: #8a8a8a;
+            font-size: 1.05rem;
+            /* Large enough touch target for mobile without looking oversized on desktop */
+            min-width: 40px;
+            min-height: 40px;
+        }
+
+            .password-toggle-btn:hover,
+            .password-toggle-btn:focus {
+                color: #495057;
+                outline: none;
+            }
+
+            .password-toggle-btn:focus-visible {
+                outline: 2px solid #6c63ff;
+                outline-offset: 2px;
+                border-radius: 4px;
+            }
+
+        /* Slightly larger tap target and icon on small/touch screens */
+        @media (max-width: 576px) {
+            .password-toggle-btn {
+                width: 44px;
+                min-width: 44px;
+                min-height: 44px;
+                font-size: 1.15rem;
+            }
+
+            .password-field .form-control {
+                padding-right: 48px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -50,9 +129,6 @@
         <asp:ScriptManager ID="ScriptManager1" runat="server" EnablePageMethods="true" EnablePartialRendering="true"></asp:ScriptManager>
 
         <div class="login-page">
-
-            <!-- Left: product photo panel. Swap the background-image path
-                 in login.css (.login-left) for your own laminate sheet photo. -->
             <div class="login-left">
                 <div class="login-left-scrim"></div>
                 <div class="brand-badge">
@@ -70,7 +146,6 @@
                 <div class="login-form-wrap">
                     <div class="auth-box card">
                         <div class="card-block">
-
                             <!-- ============ SIGN IN SECTION ============ -->
                             <div id="loginSection">
                                 <div class="row m-b-20">
@@ -85,8 +160,11 @@
                                         ControlToValidate="txtUsername" ValidationGroup="form1" ForeColor="Red" SetFocusOnError="true"></asp:RequiredFieldValidator>
                                     <span class="form-bar"></span>
                                 </div>
-                                <div class="form-group form-primary mt-3">
+                                <div class="form-group form-primary mt-3 password-field">
                                     <asp:TextBox ID="txtPassword" runat="server" class="form-control" placeholder="Password" TextMode="Password" autocomplete="off"></asp:TextBox>
+                                    <button type="button" class="password-toggle-btn" aria-label="Show password" aria-pressed="false" data-target="<%= txtPassword.ClientID %>">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                     <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server" Display="Dynamic" ErrorMessage="Please Enter Your Password"
                                         ControlToValidate="txtPassword" ValidationGroup="form1" ForeColor="Red" SetFocusOnError="true"></asp:RequiredFieldValidator>
                                     <span class="form-bar"></span>
@@ -106,7 +184,8 @@
                                 </div>
                                 <div class="row m-t-20">
                                     <div class="col-md-12">
-                                        <asp:Button ID="btnsave" OnClick="btnsave_Click" runat="server" Text="Sign in" ValidationGroup="form1" CssClass="btn btn-light-primary btn-md btn-block waves-effect waves-light text-center m-b-2" />
+                                        <asp:Button ID="btnsave" OnClick="btnsave_Click" runat="server" Text="Sign in" ValidationGroup="form1"
+                                            CssClass="btn btn-light-primary btn-md btn-block waves-effect waves-light text-center m-b-2" />
                                     </div>
                                     <div class="col-md-12 text-end">
                                         <a class="fp-back-link" id="lnkForgotPassword" style="cursor: pointer;">Forget Password</a>
@@ -172,12 +251,18 @@
                                             <p class="login-subtitle">Enter and confirm your new password</p>
                                         </div>
                                     </div>
-                                    <div class="form-group form-primary">
+                                    <div class="form-group form-primary password-field">
                                         <input type="password" id="fpNewPassword" class="form-control" placeholder="New Password" autocomplete="off" />
+                                        <button type="button" class="password-toggle-btn" aria-label="Show password" aria-pressed="false" data-target="fpNewPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                         <span class="form-bar"></span>
                                     </div>
-                                    <div class="form-group form-primary mt-3">
+                                    <div class="form-group form-primary mt-3 password-field">
                                         <input type="password" id="fpConfirmPassword" class="form-control" placeholder="Confirm Password" autocomplete="off" />
+                                        <button type="button" class="password-toggle-btn" aria-label="Show password" aria-pressed="false" data-target="fpConfirmPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                         <span class="form-bar"></span>
                                     </div>
                                     <div class="row m-t-20">
@@ -224,6 +309,57 @@
             });
         }
 
+        function setButtonLoading(btn, isLoading, loadingText) {
+            if (!btn) { return; }
+
+            if (isLoading) {
+                if (btn.dataset.originalHtml === undefined) {
+                    btn.dataset.originalHtml = btn.innerHTML;
+                }
+                btn.disabled = true;
+                btn.classList.add("is-loading");
+                btn.innerHTML = '<span class="btn-spinner"></span>' + (loadingText || "Please wait...");
+            } else {
+                btn.disabled = false;
+                btn.classList.remove("is-loading");
+                if (btn.dataset.originalHtml !== undefined) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                }
+            }
+        }
+
+        // ---- Show/Hide password toggle (works for every .password-toggle-btn on the page) ----
+        (function () {
+            var toggleButtons = document.querySelectorAll(".password-toggle-btn");
+
+            toggleButtons.forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var targetId = btn.getAttribute("data-target");
+                    var input = document.getElementById(targetId);
+                    if (!input) { return; }
+
+                    var icon = btn.querySelector("i");
+                    var isHidden = input.type === "password";
+
+                    input.type = isHidden ? "text" : "password";
+                    btn.setAttribute("aria-pressed", isHidden ? "true" : "false");
+                    btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+
+                    if (icon) {
+                        icon.classList.toggle("bi-eye", !isHidden);
+                        icon.classList.toggle("bi-eye-slash", isHidden);
+                    }
+
+                    // Keep focus on the field so mobile keyboards don't lose context
+                    input.focus({ preventScroll: true });
+                    var pos = input.value.length;
+                    if (input.setSelectionRange) {
+                        input.setSelectionRange(pos, pos);
+                    }
+                });
+            });
+        })();
+
 
         (function () {
             var loginSection = document.getElementById("loginSection");
@@ -240,6 +376,8 @@
             var fpNewPassword = document.getElementById("fpNewPassword");
             var fpConfirmPassword = document.getElementById("fpConfirmPassword");
             var btnSendOtp = document.getElementById("btnSendOtp");
+            var btnVerifyOtp = document.getElementById("btnVerifyOtp");
+            var btnUpdatePassword = document.getElementById("btnUpdatePassword");
 
             var emailIsRegistered = false; // gate flag; Send OTP re-checks anyway, this just drives UI state
 
@@ -340,8 +478,11 @@
                     return;
                 }
 
+                setButtonLoading(btnSendOtp, true, "Sending...");
+
                 PageMethods.SendOtp(email,
                     function (result) {
+                        setButtonLoading(btnSendOtp, false);
                         if (result === "OK") {
                             fpEmailDisplay.textContent = email;
                             goToStep(step2);
@@ -351,6 +492,7 @@
                         }
                     },
                     function (error) {
+                        setButtonLoading(btnSendOtp, false);
                         Swal.fire("Error", "Could not send OTP. Please try again.", "error");
                     }
                 );
@@ -362,7 +504,7 @@
             });
 
             // ---- Step 2: verify OTP ----
-            document.getElementById("btnVerifyOtp").addEventListener("click", function () {
+            btnVerifyOtp.addEventListener("click", function () {
                 var email = fpEmail.value.trim();
                 var otp = fpOtp.value.trim();
 
@@ -371,8 +513,11 @@
                     return;
                 }
 
+                setButtonLoading(btnVerifyOtp, true, "Verifying...");
+
                 PageMethods.VerifyOtp(email, otp,
                     function (result) {
+                        setButtonLoading(btnVerifyOtp, false);
                         if (result === "OK") {
                             goToStep(step3);
                         } else {
@@ -380,19 +525,20 @@
                         }
                     },
                     function (error) {
+                        setButtonLoading(btnVerifyOtp, false);
                         Swal.fire("Error", "Could not verify OTP. Please try again.", "error");
                     }
                 );
             });
 
             // ---- Step 3: update password ----
-            document.getElementById("btnUpdatePassword").addEventListener("click", function () {
+            btnUpdatePassword.addEventListener("click", function () {
                 var email = fpEmail.value.trim();
                 var pass = fpNewPassword.value;
                 var confirm = fpConfirmPassword.value;
 
-                if (!pass || pass.length < 6) {
-                    Swal.fire("Weak Password", "Password must be at least 6 characters.", "warning");
+                if (!pass || pass.length < 4) {
+                    Swal.fire("Weak Password", "Password must be at least 4 characters.", "warning");
                     return;
                 }
                 if (pass !== confirm) {
@@ -400,8 +546,11 @@
                     return;
                 }
 
+                setButtonLoading(btnUpdatePassword, true, "Updating...");
+
                 PageMethods.ResetPassword(email, pass, confirm,
                     function (result) {
+                        setButtonLoading(btnUpdatePassword, false);
                         if (result === "OK") {
                             Swal.fire("Success", "Your password has been updated. Please sign in.", "success")
                                 .then(function () { showLogin(); });
@@ -410,6 +559,7 @@
                         }
                     },
                     function (error) {
+                        setButtonLoading(btnUpdatePassword, false);
                         Swal.fire("Error", "Could not update password. Please try again.", "error");
                     }
                 );

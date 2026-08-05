@@ -357,14 +357,14 @@
                     </div>
                 </div>
             </nav>
-            <main class="dashboard-content">
-                <div class="container-fluid px-3 px-lg-4 py-4">
+            <div class="container-fluid px-3 px-lg-4 py-4">
+                <main class="dashboard-content">
                     <form id="mainForm" runat="server">
                         <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
                         </asp:ContentPlaceHolder>
                     </form>
-                </div>
-            </main>
+                </main>
+            </div>
             <br />
             <br />
             <br />
@@ -383,7 +383,7 @@
     <script src="../Content/assets/js/main.js"></script>
     <script src="../Content/assets/js/customebynikhil.js"></script>
     <script type="text/javascript">
-  
+
         function loadNotifications() {
             $.ajax({
                 type: "POST",

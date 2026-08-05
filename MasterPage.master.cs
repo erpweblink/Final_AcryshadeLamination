@@ -10,7 +10,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
     {
         if (!IsPostBack)
         {
-            if (Session["Role"].ToString() == "Admin")
+            if (Session["Role"].ToString() == "Admin" ||Session["Role"].ToString() == "Sub-Admin")
             {
                 divNoti.Visible = true;
             }
