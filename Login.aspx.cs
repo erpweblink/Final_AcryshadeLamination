@@ -3,13 +3,9 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Net.Mail;
-using System.ServiceModel.MsmqIntegration;
-using System.Text;
 using System.Web;
 using System.Web.Security;
 using System.Web.Services;
-using System.Web.UI;
 
 public partial class Login : System.Web.UI.Page
 {
