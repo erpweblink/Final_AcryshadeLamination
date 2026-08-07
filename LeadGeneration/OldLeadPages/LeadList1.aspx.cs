@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -11,7 +11,7 @@ using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
-public partial class LeadList : System.Web.UI.Page
+public partial class LeadList1 : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -47,7 +47,7 @@ public partial class LeadList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate, string salesPersonFilter)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate)
     {
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
@@ -66,7 +66,6 @@ public partial class LeadList : System.Web.UI.Page
             da.SelectCommand.Parameters.AddWithValue("@Role", role);
             da.SelectCommand.Parameters.AddWithValue("@Id", id);
             da.SelectCommand.Parameters.AddWithValue("@DealerIds", string.IsNullOrEmpty(dealerFilter) ? (object)DBNull.Value : dealerFilter);
-            da.SelectCommand.Parameters.AddWithValue("@SalesPersonId", string.IsNullOrEmpty(salesPersonFilter) ? (object)DBNull.Value : salesPersonFilter);
             DataTable dt = new DataTable();
             da.Fill(dt);
 
@@ -81,7 +80,6 @@ public partial class LeadList : System.Web.UI.Page
                 item["CreatedDate"] = row["CreatedDate"].ToString();
                 item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
                 item["AssignedTo"] = row["AssignedTo"] == DBNull.Value ? "" : row["AssignedTo"].ToString();
-                item["SalesPerson"] = row["SalesPerson"] == DBNull.Value ? "" : row["SalesPerson"].ToString();
 
                 results.Add(item);
             }
@@ -175,62 +173,19 @@ public partial class LeadList : System.Web.UI.Page
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
             using (SqlCommand cmd = new SqlCommand(
-                "UPDATE tbl_MetaLeads SET AssignedTo = @DealerID,AssignedDate = CASE WHEN @DealerID IS NULL THEN NULL ELSE GETDATE() END,AdminSideNextReminder = @reminder WHERE ID = @ID", con))
+                "UPDATE tbl_MetaLeads SET AssignedTo = @DealerID,AssignedDate = GETDATE(),AdminSideNextReminder = @reminder WHERE ID = @ID", con))
             {
-                cmd.Parameters.AddWithValue("@DealerID", string.IsNullOrWhiteSpace(dealerId)?DBNull.Value:(object)dealerId);
+                cmd.Parameters.AddWithValue("@DealerID", dealerId);
                 cmd.Parameters.AddWithValue("@ID", leadId);
-                cmd.Parameters.AddWithValue("@reminder", string.IsNullOrWhiteSpace(reminder)? DBNull.Value:(object)reminder);
+                cmd.Parameters.AddWithValue("@reminder", reminder);
 
                 con.Open();
                 cmd.ExecuteNonQuery();
                 con.Close();
             }
         }
-        string returnstatus = "Assigned";
-        if (string.IsNullOrEmpty(dealerId))
-        {
-            returnstatus = "Dealer Removed";
-        }
-        return returnstatus;
-    }
 
-    [WebMethod]
-    public static string AssignSalesPersonToLeads(string leadIds, string salesPersonId)
-    {
-        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
-        if (role == "Sales" || role == "Dealer")
-        {
-            return "Access Denied";
-        }
-
-        if (string.IsNullOrWhiteSpace(leadIds) || string.IsNullOrWhiteSpace(salesPersonId))
-        {
-            return "Please select at least one lead and a Sales Person.";
-        }
-
-        string[] ids = leadIds.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        int updatedCount = 0;
-
-        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
-        {
-            con.Open();
-
-            foreach (string rawId in ids)
-            {
-                string leadId = rawId.Trim();
-                if (leadId.Length == 0) continue;
-
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE tbl_MetaLeads SET SalesPerson = @SalesPersonId, SalesPersonAssDate = GETDATE() WHERE ID = @ID", con))
-                {
-                    cmd.Parameters.AddWithValue("@SalesPersonId", salesPersonId);
-                    cmd.Parameters.AddWithValue("@ID", leadId);
-                    updatedCount += cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        return updatedCount + " lead(s) assigned to Sales Person successfully.";
+        return "Assigned";
     }
 
     [WebMethod]

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
@@ -129,126 +128,52 @@ public partial class EnquiryList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate, string salesPersonFilter)
     {
-        string conString = ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString;
-        DataTable dt = new DataTable();
-
-        string role = System.Web.HttpContext.Current.Session["Role"] != null
-               ? System.Web.HttpContext.Current.Session["Role"].ToString() : "";
-        string userId = System.Web.HttpContext.Current.Session["ID"] != null
-            ? System.Web.HttpContext.Current.Session["ID"].ToString() : "";
-
-        using (SqlConnection con = new SqlConnection(conString))
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
+            string role = System.Web.HttpContext.Current.Session["Role"] != null
+                ? System.Web.HttpContext.Current.Session["Role"].ToString() : "";
+            string id = System.Web.HttpContext.Current.Session["ID"] != null
+                ? System.Web.HttpContext.Current.Session["ID"].ToString() : "";
 
-            using (SqlCommand cmd = new SqlCommand("SP_MetaLead", con))
+            SqlDataAdapter da = new SqlDataAdapter("SP_MetaLead", con);
+            da.SelectCommand.CommandType = CommandType.StoredProcedure;
+            da.SelectCommand.Parameters.AddWithValue("@SP_Action", "EnquiryLists");
+            da.SelectCommand.Parameters.AddWithValue("@Search", searchTerm ?? "");
+            da.SelectCommand.Parameters.AddWithValue("@ShowRecords", pageSize);
+            da.SelectCommand.Parameters.AddWithValue("@Status", statusFilter ?? "");
+            da.SelectCommand.Parameters.AddWithValue("@AssignedFilter", assignedFilter ?? "");
+            da.SelectCommand.Parameters.AddWithValue("@FromDate", string.IsNullOrEmpty(fromDate) ? (object)DBNull.Value : fromDate);
+            da.SelectCommand.Parameters.AddWithValue("@ToDate", string.IsNullOrEmpty(toDate) ? (object)DBNull.Value : toDate);
+            da.SelectCommand.Parameters.AddWithValue("@Role", role);
+            da.SelectCommand.Parameters.AddWithValue("@Id", id);
+            da.SelectCommand.Parameters.AddWithValue("@DealerIds", string.IsNullOrEmpty(dealerFilter) ? (object)DBNull.Value : dealerFilter);
+            da.SelectCommand.Parameters.AddWithValue("@SalesPersonId", string.IsNullOrEmpty(salesPersonFilter) ? (object)DBNull.Value : salesPersonFilter);
+
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+
+            List<Dictionary<string, object>> results = new List<Dictionary<string, object>>();
+
+            foreach (DataRow row in dt.Rows)
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@SP_Action", "GetEnquiryList");
+                Dictionary<string, object> item = new Dictionary<string, object>();
+                item["LeadID"] = row["LeadID"].ToString();
+                item["Name"] = row["Name"] == DBNull.Value ? "" : row["Name"].ToString();
+                item["MobileNumber"] = row["MobileNumber"] == DBNull.Value ? "" : row["MobileNumber"].ToString();
+                item["Service"] = row["message"] == DBNull.Value ? "" : row["message"].ToString();
+                item["CreatedAt"] = row["CreatedDate"].ToString();
+                item["CustomerURL"] = row["CompanyDomain"] == DBNull.Value ? "" : row["CompanyDomain"].ToString();
+                item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
+                item["AssignTo"] = row["AssignedTo"] == DBNull.Value ? "" : row["AssignedTo"].ToString();
+                item["SalesPerson"] = row["SalesPerson"] == DBNull.Value ? "" : row["SalesPerson"].ToString();
 
-                SqlDataAdapter da = new SqlDataAdapter(cmd);
-                da.Fill(dt);
-            }
-        }
-
-        DataView dv = dt.DefaultView;
-
-        List<string> filters = new List<string>();
-
-        if (role == "Dealer")
-        {
-            filters.Add(string.Format("Convert(AssignTo, System.String) = '{0}'", userId.Replace("'", "''")));
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            string term = searchTerm.Replace("'", "''");
-            filters.Add(string.Format(
-                "(Convert(Name, System.String) LIKE '%{0}%' OR Convert(MobileNumber, System.String) LIKE '%{0}%' OR Convert(message, System.String) LIKE '%{0}%')",
-                term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(statusFilter))
-        {
-            filters.Add(string.Format("Status = '{0}'", statusFilter.Replace("'", "''")));
-        }
-
-        if (role != "Dealer")
-        {
-            if (!string.IsNullOrWhiteSpace(assignedFilter))
-            {
-                if (assignedFilter == "Assigned")
-                    filters.Add("(AssignTo IS NOT NULL AND AssignTo <> '')");
-                else if (assignedFilter == "Not Assigned")
-                    filters.Add("(AssignTo IS NULL OR AssignTo = '')");
+                results.Add(item);
             }
 
-            if (!string.IsNullOrWhiteSpace(dealerFilter))
-            {
-                var ids = dealerFilter.Split(',')
-                    .Select(x => x.Trim().Replace("'", "''"))
-                    .Where(x => x.Length > 0)
-                    .Select(x => "'" + x + "'");
-
-                filters.Add(string.Format("Convert(AssignTo, System.String) IN ({0})", string.Join(",", ids)));
-            }
+            return JsonConvert.SerializeObject(results);
         }
-
-        bool hasFromDate = !string.IsNullOrWhiteSpace(fromDate);
-        bool hasToDate = !string.IsNullOrWhiteSpace(toDate);
-
-        if (hasFromDate && hasToDate)
-        {
-            filters.Add(string.Format(
-                "FilterDate >= '{0}' AND FilterDate <= '{1}'",
-                fromDate,
-                toDate));
-        }
-        else if (hasFromDate)
-        {
-            filters.Add(string.Format(
-                "FilterDate = '{0}'",
-                fromDate));
-        }
-        else if (hasToDate)
-        {
-            filters.Add(string.Format(
-                "FilterDate = '{0}'",
-                toDate));
-        }
-
-        if (filters.Count > 0)
-        {
-            dv.RowFilter = string.Join(" AND ", filters);
-        }
-
-
-        dv.Sort = "EnquiryDate DESC";
-
-        List<Dictionary<string, object>> results = new List<Dictionary<string, object>>();
-
-        int count = 0;
-        foreach (DataRowView row in dv)
-        {
-            if (pageSize > 0 && count >= pageSize) break;
-
-            Dictionary<string, object> item = new Dictionary<string, object>();
-            item["LeadID"] = row["LeadID"].ToString();
-            item["Name"] = row["Name"] == DBNull.Value ? "" : row["Name"].ToString();
-            item["MobileNumber"] = row["MobileNumber"] == DBNull.Value ? "" : row["MobileNumber"].ToString();
-            item["Service"] = row["message"] == DBNull.Value ? "" : row["message"].ToString();
-            item["CreatedAt"] = row["EnquiryDate"] == DBNull.Value ? "" : Convert.ToDateTime(row["EnquiryDate"]).ToString("dd-MMM-yyyy");
-            item["CustomerURL"] = "";
-            item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
-            item["AssignTo"] = row["AssignTo"] == DBNull.Value ? "" : row["AssignTo"].ToString();
-            item["FeedbackHistory"] = row["FeedbackHistory"] == DBNull.Value ? "" : row["FeedbackHistory"].ToString();
-
-            results.Add(item);
-            count++;
-        }
-
-        return JsonConvert.SerializeObject(results);
     }
 
     [WebMethod]
@@ -278,114 +203,202 @@ public partial class EnquiryList : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string UpdateLeadStatus(int id, string status)
+    public static string GetSalesPerson()
     {
-        try
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
-            using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+            using (SqlCommand cmd = new SqlCommand(
+                "SELECT ID, FullName as SalesPerson FROM tbl_UserMaster WHERE ISNULL(IsDeleted,0) = 0 AND UserRole='Sales' ORDER BY SalesPerson", con))
             {
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE tbl_WebsiteEnquiry SET Status = @Status WHERE ID = @ID", con))
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+
+                List<Dictionary<string, string>> salesPerson = new List<Dictionary<string, string>>();
+                foreach (DataRow row in dt.Rows)
                 {
-                    cmd.Parameters.AddWithValue("@Status", string.IsNullOrWhiteSpace(status) ? DBNull.Value : (Object)status);
-                    cmd.Parameters.AddWithValue("@ID", id);
-
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                    con.Close();
+                    salesPerson.Add(new Dictionary<string, string> {
+                        { "ID", row["ID"].ToString() },
+                        { "SalesPerson", row["SalesPerson"].ToString() }
+                    });
                 }
-            }
 
-            return "Success";
+                return JsonConvert.SerializeObject(salesPerson);
+            }
         }
-        catch (Exception ex)
+    }
+
+    [WebMethod]
+    public static string UpdateLeadStatus(string leadId, string status)
+    {
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
         {
-            return "Error : " + ex.Message;
+            using (SqlCommand cmd = new SqlCommand(
+                "UPDATE tbl_WebsiteEnquiry SET Status = @Status WHERE ID = @ID", con))
+            {
+                cmd.Parameters.AddWithValue("@Status", string.IsNullOrWhiteSpace(status) ? DBNull.Value : (object)status);
+                cmd.Parameters.AddWithValue("@ID", leadId);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
         }
+
+        return "Updated";
     }
 
     [WebMethod]
     public static string AssignDealerToLead(string leadId, string dealerId, string reminder)
     {
-        try
+        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
+        if (role == "Dealer")
         {
-            string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
-            if (role == "Dealer")
+            return "Access Denied";
+        }
+
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            using (SqlCommand cmd = new SqlCommand(
+                "UPDATE tbl_WebsiteEnquiry SET AssignTo = @DealerID, AssignDate = CASE WHEN @DealerID IS NULL THEN NULL ELSE GETDATE() END, AdminReminderDate = @reminder WHERE ID = @ID", con))
             {
-                return "Access Denied";
+                cmd.Parameters.AddWithValue("@DealerID", string.IsNullOrWhiteSpace(dealerId) ? DBNull.Value : (object)dealerId);
+                cmd.Parameters.AddWithValue("@ID", leadId);
+                cmd.Parameters.AddWithValue("@reminder", string.IsNullOrWhiteSpace(reminder) ? DBNull.Value : (object)reminder);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
             }
+        }
 
-            using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        return string.IsNullOrEmpty(dealerId) ? "Dealer Removed" : "Assigned";
+    }
+
+    [WebMethod]
+    public static string AssignSalesPersonToLeads(string leadIds, string salesPersonId)
+    {
+        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
+        if (role == "Sales" || role == "Dealer")
+        {
+            return "Access Denied";
+        }
+
+        if (string.IsNullOrWhiteSpace(leadIds) || string.IsNullOrWhiteSpace(salesPersonId))
+        {
+            return "Please select at least one lead and a Sales Person.";
+        }
+
+        string[] ids = leadIds.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        int updatedCount = 0;
+
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            con.Open();
+
+            foreach (string rawId in ids)
             {
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE tbl_WebsiteEnquiry SET AssignTo = @DealerID,AssignDate = GETDATE(),AdminReminderDate = @reminder WHERE ID = @ID", con))
-                {
-                    cmd.Parameters.AddWithValue("@DealerID", dealerId);
-                    cmd.Parameters.AddWithValue("@ID", leadId);
-                    cmd.Parameters.AddWithValue("@reminder", reminder);
+                string leadId = rawId.Trim();
+                if (leadId.Length == 0) continue;
 
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                    con.Close();
+                using (SqlCommand cmd = new SqlCommand(
+                    "UPDATE tbl_WebsiteEnquiry SET SalesPerson = @SalesPersonId, SalesPersonAssDate = GETDATE() WHERE ID = @ID", con))
+                {
+                    cmd.Parameters.AddWithValue("@SalesPersonId", salesPersonId);
+                    cmd.Parameters.AddWithValue("@ID", leadId);
+                    updatedCount += cmd.ExecuteNonQuery();
                 }
             }
-            return "Assigned";
         }
-        catch (Exception ex)
-        {
-            return "Error : " + ex.Message;
-        }
+
+        return updatedCount + " lead(s) assigned to Sales Person successfully.";
     }
 
     [WebMethod]
     public static string SaveFeedback(int leadId, string status, string feedback, string followDate)
     {
-        try
-        {
-            string createdBy = HttpContext.Current.Session["ID"].ToString();
+        string createdBy = HttpContext.Current.Session["ID"].ToString();
 
-            using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            SqlCommand cmd = new SqlCommand(@"
+            INSERT INTO tbl_WebsiteEnquiryFollowUps
+            (
+                WebsiteEnqId,
+                Feedback,
+                Status,
+                FollowUpDate,
+                UserName,
+                CreatedOn
+            )
+            VALUES
+            (
+                @LeadId,
+                @Feedback,
+                @Status,
+                @ReminderDate,
+                @CreatedBy,
+                GETDATE()
+            )", con);
+
+            cmd.Parameters.AddWithValue("@LeadId", leadId);
+            cmd.Parameters.AddWithValue("@Feedback", feedback);
+            cmd.Parameters.AddWithValue("@Status", status);
+
+            if (string.IsNullOrEmpty(followDate))
+                cmd.Parameters.AddWithValue("@ReminderDate", DBNull.Value);
+            else
+                cmd.Parameters.AddWithValue("@ReminderDate", Convert.ToDateTime(followDate));
+
+            cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
+        }
+
+        return "Success";
+    }
+
+    [WebMethod]
+    public static string GetFollowUpHistory(int leadId)
+    {
+        DataTable dt = new DataTable();
+
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            SqlCommand cmd = new SqlCommand(@"
+            SELECT
+                CONVERT(varchar(20), h.CreatedOn, 105) AS FollowDate,
+                h.Feedback,
+                h.Status,
+                CONVERT(varchar(20), h.FollowUpDate, 105) AS NextReminder,
+                UM.FullName AS UserName
+            FROM tbl_WebsiteEnquiryFollowUps h
+            LEFT JOIN tbl_UserMaster UM
+            ON UM.ID = h.UserName
+            WHERE h.WebsiteEnqId = @LeadId
+            ORDER BY h.CreatedOn DESC", con);
+
+            cmd.Parameters.AddWithValue("@LeadId", leadId);
+
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
+        }
+
+        List<object> list = new List<object>();
+
+        foreach (DataRow dr in dt.Rows)
+        {
+            list.Add(new
             {
-                SqlCommand cmd = new SqlCommand(@"
-                INSERT INTO tbl_WebsiteEnquiryFollowUps
-                (
-                    WebsiteEnqId,
-                    Feedback,
-                    Status,
-                    FollowUpDate,
-                    UserName,
-                    CreatedOn
-                )
-                VALUES
-                (
-                    @LeadId,
-                    @Feedback,
-                    @Status,
-                    @ReminderDate,
-                    @CreatedBy,
-                    GETDATE()
-                )", con);
-
-                cmd.Parameters.AddWithValue("@LeadId", leadId);
-                cmd.Parameters.AddWithValue("@Feedback", feedback);
-                cmd.Parameters.AddWithValue("@Status", status);
-
-                if (string.IsNullOrEmpty(followDate))
-                    cmd.Parameters.AddWithValue("@ReminderDate", DBNull.Value);
-                else
-                    cmd.Parameters.AddWithValue("@ReminderDate", Convert.ToDateTime(followDate));
-
-                cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
-
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
-
-            return "Success";
+                FollowDate = dr["FollowDate"].ToString(),
+                Feedback = dr["Feedback"].ToString(),
+                Status = dr["Status"].ToString(),
+                NextReminder = dr["NextReminder"].ToString(),
+                UserName = dr["UserName"].ToString()
+            });
         }
-        catch (Exception ex)
-        {
-            return "Error : " + ex.Message;
-        }
+
+        return JsonConvert.SerializeObject(list);
     }
 }

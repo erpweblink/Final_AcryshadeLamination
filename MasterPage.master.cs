@@ -10,7 +10,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
     {
         if (!IsPostBack)
         {
-            if (Session["Role"].ToString() == "Admin" ||Session["Role"].ToString() == "Sub-Admin")
+            if (Session["Role"].ToString() == "Admin" || Session["Role"].ToString() == "Sub-Admin")
             {
                 divNoti.Visible = true;
             }
@@ -71,7 +71,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
         {
             foreach (DataRow row in dt.Rows)
             {
-                string MenuName = string.IsNullOrWhiteSpace(row["PageName"].ToString())?"No Access": row["PageName"].ToString();
+                string MenuName = string.IsNullOrWhiteSpace(row["PageName"].ToString()) ? "No Access" : row["PageName"].ToString();
 
                 /*Dashboard*/
                 {
@@ -186,7 +186,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
                         string PageAccess = row["PageAccess"].ToString();
                         AssMCTab.Visible = PageAccess == "True" ? true : false;
                     }
-                    
+
                     if (MenuName == "WorkOrdrForDesign.aspx")
                     {
                         string PageAccess = row["PageAccess"].ToString();
@@ -248,7 +248,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
                         TrenTab.Visible = PageAccess == "True" ? true : false;
                     }
 
-                    if(PTRTab.Visible== false && MDTab.Visible == false && TrenTab.Visible == false)
+                    if (PTRTab.Visible == false && MDTab.Visible == false && TrenTab.Visible == false)
                     {
                         DIvRep.Visible = false;
                     }
@@ -257,6 +257,11 @@ public partial class MasterPage : System.Web.UI.MasterPage
 
                 /*Leads*/
                 {
+                    if (MenuName == "AdsDetails.aspx")
+                    {
+                        string PageAccess = row["PageAccess"].ToString();
+                        A0.Visible = PageAccess == "True" ? true : false;
+                    }
                     if (MenuName == "LeadList.aspx")
                     {
                         string PageAccess = row["PageAccess"].ToString();
@@ -273,7 +278,7 @@ public partial class MasterPage : System.Web.UI.MasterPage
                         A3.Visible = PageAccess == "True" ? true : false;
                     }
 
-                    if(A1.Visible== false && A2.Visible == false && A3.Visible == false )
+                    if (A0.Visible == false && A1.Visible == false && A2.Visible == false && A3.Visible == false)
                     {
                         DivLeads.Visible = false;
                     }

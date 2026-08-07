@@ -1,4 +1,4 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master"
+<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master"
     AutoEventWireup="true"
     CodeFile="EnquiryList.aspx.cs"
     Inherits="EnquiryList" %>
@@ -97,6 +97,14 @@
                 transform: rotate(-25deg);
             }
 
+        #btnAssign:hover {
+            transform: rotate(-25deg);
+        }
+
+        #btnSearch:hover {
+            transform: rotate(-25deg);
+        }
+
         /* ===== Table ===== */
         .leads-table {
             border: none !important;
@@ -105,42 +113,76 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+            table-layout: fixed;
+            width: 100%;
         }
 
-            .leads-table thead tr {
-                background: linear-gradient(135deg, #2d6be0 0%, #1e56c4 100%) !important;
+        .col-checkbox {
+            width: 40px;
+        }
+
+        .col-sr {
+            width: 60px;
+        }
+
+        .col-personal {
+            width: 200px;
+        }
+
+        .col-other {
+            width: 480px;
+        }
+
+        .col-sales {
+            width: 180px;
+        }
+
+        .col-status {
+            width: 140px;
+        }
+
+        .col-assign {
+            width: 200px;
+        }
+
+        .col-follow {
+            width: 140px;
+        }
+
+        .leads-table thead tr {
+            background: linear-gradient(135deg, #2d6be0 0%, #1e56c4 100%) !important;
+        }
+
+        .leads-table th {
+            border: none !important;
+            height: 52px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ffffff !important;
+            vertical-align: middle;
+        }
+
+        .leads-table td {
+            border: none !important;
+            border-bottom: 1px solid #eef1f5 !important;
+            vertical-align: middle;
+            padding: 14px 12px;
+            background: #ffffff;
+        }
+
+        .leads-table tbody tr {
+            transition: background-color 0.15s;
+        }
+
+            .leads-table tbody tr:hover td {
+                background-color: #f4f8ff;
             }
 
-            .leads-table th {
-                border: none !important;
-                height: 52px;
-                font-weight: 600;
-                font-size: 13px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: #ffffff !important;
-                vertical-align: middle;
+            .leads-table tbody tr:last-child td {
+                border-bottom: none !important;
             }
-
-            .leads-table td {
-                border: none !important;
-                border-bottom: 1px solid #eef1f5 !important;
-                vertical-align: middle;
-                padding: 14px 12px;
-                background: #ffffff;
-            }
-
-            .leads-table tbody tr {
-                transition: background-color 0.15s;
-            }
-
-                .leads-table tbody tr:hover td {
-                    background-color: #f4f8ff;
-                }
-
-                .leads-table tbody tr:last-child td {
-                    border-bottom: none !important;
-                }
 
         /* ===== Status Badges (pill-style) ===== */
         .ddl-status {
@@ -260,29 +302,26 @@
                 color: #1a4fc8 !important;
             }
 
-        /* Feedback history entries (server already renders these as HTML) */
-        #historyDiv div {
-            font-size: 13.5px;
-            line-height: 1.7;
-        }
-
-        #historyDiv hr {
-            margin: 8px 0;
-            border-color: #eef1f5;
-        }
-
         /* Fixed modal height */
         #followUpModal .modal-dialog {
-            max-width: 700px;
+            max-width: 900px;
+        }
+
+        #followUpModal .modal-body {
+            overflow: hidden;
+        }
+
+        #historySection {
+            height: 100%;
         }
 
         #historyDiv {
-            max-height: 340px;
+            height: 340px;
             overflow-y: auto;
             overflow-x: hidden;
             border: 1px solid #dee2e6;
             border-radius: 6px;
-            padding: 12px;
+            padding: 10px;
             background: #fff;
         }
 
@@ -302,6 +341,7 @@
         .role-hidden {
             display: none !important;
         }
+
         /* Hide default inline tags inside the select box itself */
         .select2-container--default .select2-selection--multiple .select2-selection__rendered {
             display: none !important;
@@ -335,7 +375,7 @@
         }
 
             .select2-results__option[aria-selected="true"]::after {
-                content: " ✓";
+                content: " \2713";
                 color: #0a58ca;
             }
 
@@ -386,6 +426,13 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        .lead-checkbox, #chkSelectAll {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
         /* ===== Responsive: stack the table on small screens ===== */
         @media (max-width: 768px) {
             .leads-table thead {
@@ -430,6 +477,7 @@
     <script type="text/javascript">
         var currentUserRole = "<%= System.Web.HttpContext.Current.Session["Role"] != null ? System.Web.HttpContext.Current.Session["Role"].ToString() : "" %>";
         var dealersList = [];
+        var salesPersonList = [];
 
         function loadDealers(callback) {
             PageMethods.GetDealers(function (result) {
@@ -438,6 +486,41 @@
             }, function (error) {
                 console.error("Failed to load dealers: " + error.get_message());
             });
+        }
+
+        function loadSalesPerson(callback) {
+            PageMethods.GetSalesPerson(function (result) {
+                salesPersonList = JSON.parse(result);
+                if (callback) callback();
+            }, function (error) {
+                console.error("Failed to load Sales Person: " + error.get_message());
+            });
+        }
+
+        function initSalesFilterDropdown() {
+            if (currentUserRole === "Dealer" || currentUserRole === "Sales") return;
+
+            var $ddl = $("#ddlSalesPerson");
+
+            $ddl.empty();
+            $ddl.append('<option value="" selected>Select Sales Person</option>');
+
+            $.each(salesPersonList, function (i, dealer) {
+                $ddl.append(
+                    $('<option>', {
+                        value: dealer.ID,
+                        text: dealer.SalesPerson
+                    })
+                );
+            });
+
+            $ddl.select2({
+                width: '100%',
+                closeOnSelect: true,
+                dropdownAutoWidth: false
+            });
+
+            $ddl.val("");
         }
 
         function escapeHtml(str) {
@@ -452,36 +535,79 @@
         }
 
         function renderLeadsTable(leads) {
-            window.__lastLeads = leads || [];
+            // destroy existing select2 widgets so their body-appended dropdowns don't leak
+            $(".ddl-dealer").each(function () {
+                if ($(this).hasClass("select2-hidden-accessible")) {
+                    $(this).select2("destroy");
+                }
+            });
 
             var tbody = $("#leadsTableBody");
             tbody.empty();
 
+            // Reset "select all" whenever the grid is re-rendered/re-searched
+            $("#chkSelectAll").prop("checked", false);
+
+            var showCheckboxColumn = (currentUserRole !== "Sales" && currentUserRole !== "Dealer");
+            var showSalesPersonColumn = (currentUserRole !== "Sales" && currentUserRole !== "Dealer");
+            var showAssignColumn = (currentUserRole !== "Dealer");
+
             if (!leads || leads.length === 0) {
-                tbody.append('<tr><td colspan="8" class="text-center">No records found.</td></tr>');
+                var colCount = 6; // Sr No, Name, Mobile, Message, Date, Status, Follow Up
+                if (showCheckboxColumn) colCount++;
+                if (showSalesPersonColumn) colCount++;
+                if (showAssignColumn) colCount++;
+                tbody.append('<tr><td colspan="' + colCount + '" class="text-center">No records found.</td></tr>');
                 return;
             }
 
             leads.forEach(function (lead, index) {
 
                 var statusClass = statusClassFor(lead.Status);
-                var assignCellHtml;
 
-                if (currentUserRole === "Dealer") {
-                    // Dealer: read-only, just show the assigned dealer's name as plain text
-                    var assignedDealer = dealersList.find(function (d) { return d.ID === lead.AssignTo; });
-                    var dealerName = assignedDealer ? escapeHtml(assignedDealer.DealerName) : "-";
-                    assignCellHtml = '<span class="fw-bold"><i>' + dealerName + '</i></span>';
-                } else {
-                    var dealerOptions = '<option value="">-- Select Dealer --</option>';
-                    dealersList.forEach(function (dealer) {
-                        var selected = (dealer.ID === lead.AssignTo) ? "selected" : "";
-                        dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
-                    });
-                    assignCellHtml =
-                        '<select class="form-control ddl-dealer" data-lead-id="' + lead.LeadID + '">' +
-                        dealerOptions +
-                        '</select>';
+                var checkboxCellHtml = "";
+                if (showCheckboxColumn) {
+                    checkboxCellHtml =
+                        '<td class="col-checkbox" data-label="Select" style="text-align:center;">' +
+                        '<input type="checkbox" class="lead-checkbox" data-lead-id="' + lead.LeadID + '" />' +
+                        '</td>';
+                }
+
+                var salesPersonTdHtml = "";
+                if (showSalesPersonColumn) {
+                    var salesPersonName = "N/A";
+                    if (lead.SalesPerson) {
+                        var assignedSalesPerson = salesPersonList.find(function (s) { return s.ID === lead.SalesPerson; });
+                        if (assignedSalesPerson) salesPersonName = escapeHtml(assignedSalesPerson.SalesPerson);
+                    }
+                    salesPersonTdHtml =
+                        '<td data-label="Sales Person" style="text-align:center;"><small class="fw-bold" style="color: #63769b !important;"><i>' + salesPersonName + '</i></small></td>';
+                }
+
+                var assignTdHtml = "";
+                if (showAssignColumn) {
+                    var assignCellHtml;
+
+                    if (currentUserRole === "Dealer") {
+                        var assignedDealer = dealersList.find(function (d) { return d.ID === lead.AssignTo; });
+                        var dealerName = assignedDealer ? escapeHtml(assignedDealer.DealerName) : "-";
+                        assignCellHtml = '<span class="fw-bold"><i>' + dealerName + '</i></span>';
+                    } else {
+                        var dealerOptions = '<option value="">-- Select Dealer --</option>';
+                        dealersList.forEach(function (dealer) {
+                            var selected = (dealer.ID === lead.AssignTo) ? "selected" : "";
+                            dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
+                        });
+                        assignCellHtml =
+                            '<select class="form-control ddl-dealer" data-lead-id="' + lead.LeadID + '">' +
+                            dealerOptions +
+                            '</select>';
+                    }
+
+                    assignTdHtml =
+                        '<td class="col-assign" data-label="Assign Dealer" style="text-align:center;">' +
+                        assignCellHtml +
+                        '</td>';
                 }
 
                 var urlCell = lead.CustomerURL
@@ -490,11 +616,13 @@
 
                 var row =
                     '<tr>' +
+                    checkboxCellHtml +
                     '<td data-label="Sr No." style="text-align:center;">' + (index + 1) + '</td>' +
                     '<td data-label="Name">' + escapeHtml(lead.Name) + '</td>' +
                     '<td data-label="Mobile Number">' + escapeHtml(lead.MobileNumber) + '</td>' +
-                    '<td data-label="Message"> <div class="scroll-box">' + escapeHtml(lead.Service) + '</div></td>' +
-                    '<td data-label="Inquiry Date" class="lead-date-cell">' + escapeHtml(lead.CreatedAt) + '</td>' +
+                    '<td data-label="Message"><div class="scroll-box">' + escapeHtml(lead.Service) + '</div></td>' +
+                    '<td data-label="Inquiry Date" class="lead-date-cell">' + lead.CreatedAt + '</td>' +
+                    salesPersonTdHtml +
                     '<td data-label="Status" style="text-align:center;">' +
                     '<select class="form-control ddl-status ' + statusClass + '" data-lead-id="' + lead.LeadID + '" onchange="UpdateLeadStatus(this);">' +
                     '<option value="" ' + (!lead.Status ? "selected" : "") + '>Select Status</option>' +
@@ -503,9 +631,7 @@
                     '<option value="Hot" ' + (lead.Status === "Hot" ? "selected" : "") + '>Hot</option>' +
                     '</select>' +
                     '</td>' +
-                    '<td class="col-assign" data-label="Assign Lead" style="text-align:center;">' +
-                    assignCellHtml +
-                    '</td>' +
+                    assignTdHtml +
                     '<td data-label="Follow Up" style="text-align:center;">' +
                     '<button type="button" class="btn btn-primary btn-sm" onclick="OpenFollowUp(' + lead.LeadID + ');">' +
                     '<i class="fa fa-phone"></i> Follow Up' +
@@ -529,18 +655,31 @@
             var leadId = ctrl.getAttribute("data-lead-id");
             var newStatus = ctrl.value;
 
-            PageMethods.UpdateLeadStatus(parseInt(leadId, 10), newStatus, function () {
-                // status saved silently, matches original page behaviour
-            }, function (error) {
-                alert("Status Update Failed: " + error.get_message());
+            PageMethods.UpdateLeadStatus(leadId, newStatus, function () { }, function (error) {
+                alert("Failed to update status: " + error.get_message());
             });
         }
 
         function AssignDealer(ctrl) {
-            var leadId = ctrl.getAttribute("data-lead-id");
-            var dealerId = ctrl.value;
+            var leadId = $(ctrl).data("lead-id");
+            var dealerId = $(ctrl).val();
 
-            if (!dealerId) return;
+            // Same as LeadList: clearing the dealer removes the assignment immediately, no modal needed
+            if (dealerId == "") {
+                PageMethods.AssignDealerToLead(
+                    leadId,
+                    dealerId,
+                    "",
+                    function (msg) {
+                        $("#assignDealerModal").modal("hide");
+                        searchLeads();
+                        alert(msg);
+                    },
+                    function (err) {
+                        alert(err.get_message());
+                    });
+                return;
+            }
 
             $("#hdAssignLeadId").val(leadId);
             $("#hdDealerId").val(dealerId);
@@ -559,17 +698,21 @@
                 return;
             }
 
-            PageMethods.AssignDealerToLead(leadId, dealerId, reminder, function (result) {
-                if (result && result.indexOf("Error") === 0) {
-                    alert(result);
-                } else {
-                    $("#assignDealerModal").modal("hide");
-                }
+            PageMethods.AssignDealerToLead(leadId, dealerId, reminder, function (msg) {
+                $("#assignDealerModal").modal("hide");
                 searchLeads();
+                alert(msg);
             }, function (error) {
                 alert("Failed to assign dealer: " + error.get_message());
             });
         }
+
+        $(document).on('hidden.bs.modal', function () {
+            if ($('.modal:visible').length === 0) {
+                $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+            }
+        });
 
         function initDealerFilterDropdown() {
             if (currentUserRole === "Dealer") return;
@@ -646,7 +789,59 @@
             });
         }
 
+        function toggleSelectAll(ctrl) {
+            $(".lead-checkbox").prop("checked", ctrl.checked);
+        }
+
+        function getSelectedLeadIds() {
+            var ids = [];
+            $(".lead-checkbox:checked").each(function () {
+                ids.push($(this).data("lead-id").toString());
+            });
+            return ids;
+        }
+
+        function assignSalesPerson() {
+            var salesPersonId = $("#ddlSalesPerson").val();
+
+            if (!salesPersonId) {
+                alert("Please select a Sales Person.");
+                return;
+            }
+
+            var selectedLeadIds = getSelectedLeadIds();
+
+            if (selectedLeadIds.length === 0) {
+                alert("Please select at least one lead using the checkboxes.");
+                return;
+            }
+
+            if (!confirm("Assign " + selectedLeadIds.length + " lead(s) to the selected Sales Person?")) {
+                return;
+            }
+
+            PageMethods.AssignSalesPersonToLeads(
+                selectedLeadIds.join(","),
+                salesPersonId,
+                function (msg) {
+                    alert(msg);
+                    $("#chkSelectAll").prop("checked", false);
+                    searchLeads();
+                },
+                function (error) {
+                    alert("Failed to assign Sales Person: " + error.get_message());
+                }
+            );
+        }
+
+        function searchData() {
+            searchLeads();
+        }
+
+        var searchRequestId = 0;
         function searchLeads() {
+            var thisRequestId = ++searchRequestId;
+
             var searchTerm = $("#txtSearch").val();
             var pageSize = parseInt($("#ddlPageSize").val());
             var statusFilter = $("#ddlStatusFilter").val();
@@ -660,7 +855,13 @@
                 dealerFilter = selectedDealers ? selectedDealers.join(",") : "";
             }
 
-            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, fromDate, toDate, function (result) {
+            var salesPersonFilter = "";
+            if (currentUserRole !== "Sales" && currentUserRole !== "Dealer") {
+                salesPersonFilter = $("#ddlSalesPerson").val() || "";
+            }
+
+            PageMethods.SearchLeads(searchTerm, pageSize, statusFilter, assignedFilter, dealerFilter, fromDate, toDate, salesPersonFilter, function (result) {
+                if (thisRequestId !== searchRequestId) return;
                 renderLeadsTable(JSON.parse(result));
             }, function (error) {
                 console.error("Search failed: " + error.get_message());
@@ -681,9 +882,15 @@
             $("#ddlPageSize").val("25");
 
             if (currentUserRole !== "Dealer" && $("#ddlDealerFilter").hasClass("select2-hidden-accessible")) {
-                $("#ddlDealerFilter").val(null).trigger("change.select2").trigger("change");
-                // triggers "change.dealerFilter" above, which calls renderDealerBadges() + searchLeads()
+                $("#ddlDealerFilter").val(null).trigger("change.select2");
+                renderDealerBadges();
             }
+
+            if (currentUserRole !== "Sales" && currentUserRole !== "Dealer" && $("#ddlSalesPerson").hasClass("select2-hidden-accessible")) {
+                $("#ddlSalesPerson").val("").trigger("change");
+            }
+
+            $("#chkSelectAll").prop("checked", false);
 
             searchLeads();
         }
@@ -698,12 +905,29 @@
 
             if (currentUserRole === "Dealer") {
                 $("#ddlAssignedFilter").val("Assigned").prop("disabled", true);
+                $("#salesPersonWrapper").addClass("role-hidden");
                 $("#dealerFilterWrapper").addClass("role-hidden");
+                $("#dealerBadgesWrapper").addClass("role-hidden");
+                $("#thCheckbox").addClass("role-hidden");
+                $("#thSalesPerson").addClass("role-hidden");
+                $("#thAssign").addClass("role-hidden");
+                $("#lblAssignedFilter").text("Assigned/Not Assigned");
+            } else if (currentUserRole === "Sales") {
+                $("#salesPersonWrapper").addClass("role-hidden");
+                $("#thCheckbox").addClass("role-hidden");
+                $("#thSalesPerson").addClass("role-hidden");
+                $("#lblAssignedFilter").text("Dealer Assigned/Not Assigned");
+            } else {
+                $("#lblAssignedFilter").text("Sales Assigned/Not Assigned");
             }
 
-            loadDealers(function () {
-                initDealerFilterDropdown();
-                searchLeads(); // initial load
+            loadSalesPerson(function () {
+                initSalesFilterDropdown();
+
+                loadDealers(function () {
+                    initDealerFilterDropdown();
+                    searchLeads(); // initial load - runs only once both lookup lists are ready
+                });
             });
 
             $("#txtSearch").on("keyup", function () {
@@ -733,32 +957,10 @@
 
         // ================= Follow Up modal =================
 
-        function OpenFollowUp(id) {
-            $("#hdLeadId").val(id);
-            $("#txtFeedback").val("");
-            $("#txtFollowDate").val("");
-            $("#ddlCallStatus").val("");
-            $("#spReminder").hide();
-
-            $("#followUpForm").show();
-            $("#historySection").hide();
-
-            $("#followUpModal").modal("show");
-        }
-
-        $(document).on("change", "#ddlCallStatus", function () {
-            if ($(this).val() === "Follow-Up") {
-                $("#spReminder").show();
-            } else {
-                $("#spReminder").hide();
-            }
-        });
-
         function ShowHistory() {
             $("#followUpForm").hide();
             $("#historySection").show();
-
-            LoadHistory($("#hdLeadId").val());
+            LoadHistory();
         }
 
         function ShowFollowUpForm() {
@@ -766,11 +968,64 @@
             $("#followUpForm").show();
         }
 
-        function LoadHistory(leadId) {
-            var lead = window.__lastLeads && window.__lastLeads.find(function (l) { return l.LeadID == leadId; });
-            var html = lead && lead.FeedbackHistory ? lead.FeedbackHistory : "";
+        function OpenFollowUp(id) {
+            $("#hdLeadId").val(id);
+            $("#txtFeedback").val("");
+            $("#ddlCallStatus").val("");
+            $("#txtFollowDate").val("");
+            $("#spReminder").hide();
+            $("#historyDiv").html("");
 
-            $("#historyDiv").html(html || '<div class="text-muted">No follow-up history yet.</div>');
+            $("#historySection").hide();
+            $("#followUpForm").show();
+
+            $("#followUpModal").modal("show");
+        }
+
+        $(document).on("change", "#ddlCallStatus", function () {
+            if ($(this).val() === "Follow-Up") {
+                $("#spReminder").show();
+                $("#txtFollowDate").prop("required", true);
+            } else {
+                $("#spReminder").hide();
+                $("#txtFollowDate").prop("required", false);
+                $("#txtFollowDate").val("");
+            }
+        });
+
+        function LoadHistory() {
+            var leadId = $("#hdLeadId").val();
+
+            PageMethods.GetFollowUpHistory(leadId,
+                function (result) {
+                    var data = JSON.parse(result);
+
+                    if (data.length == 0) {
+                        $("#historyDiv").html("<div class='alert alert-info'>No follow-up history found.</div>");
+                        return;
+                    }
+
+                    var html = "<table class='table table-bordered table-striped'>";
+                    html += "<thead><tr>";
+                    html += "<th>Date</th><th>Feedback</th><th>Status</th><th>Follow Up</th><th>User</th>";
+                    html += "</tr></thead><tbody>";
+
+                    $.each(data, function (i, v) {
+                        html += "<tr>";
+                        html += "<td>" + (v.FollowDate || "") + "</td>";
+                        html += "<td><div class='scroll-box'>" + (v.Feedback || "") + "</div></td>";
+                        html += "<td>" + (v.Status || "") + "</td>";
+                        html += "<td>" + (v.NextReminder || "") + "</td>";
+                        html += "<td>" + (v.UserName || "") + "</td>";
+                        html += "</tr>";
+                    });
+
+                    html += "</tbody></table>";
+                    $("#historyDiv").html(html);
+                },
+                function (err) {
+                    alert(err.get_message());
+                });
         }
 
         function saveFeedback() {
@@ -803,9 +1058,8 @@
                     $("#txtFollowDate").val("");
                     $("#ddlCallStatus").val("");
                     $("#spReminder").hide();
-                    $("#followUpModal").modal("hide");
-                    searchLeads();
                     alert("Feedback Saved Successfully");
+                    searchLeads();
                 } else {
                     alert(result);
                 }
@@ -841,8 +1095,8 @@
                             <option value="Cold">Cold</option>
                         </select>
                     </div>
-                    <div class="col-12 col-md-2 mb-2 mb-md-0">
-                        <label class="form-label fw-bold">Assigned/Not Assigned</label>
+                    <div class="col-12 col-md-3 mb-2 mb-md-0">
+                        <label class="form-label fw-bold" id="lblAssignedFilter">Assigned/Not Assigned</label>
                         <select id="ddlAssignedFilter" class="form-control">
                             <option value="Not Assigned">Not Assigned</option>
                             <option value="Assigned">Assigned</option>
@@ -858,7 +1112,7 @@
                         <input type="date" id="txtToDate" class="form-control" />
                     </div>
 
-                    <div class="col-md-3 col-12 mb-2 mb-md-0 d-flex justify-content-end ms-md-auto">
+                    <div class="col-md-2 col-12 mb-2 mb-md-0 d-flex justify-content-end ms-md-auto">
                         <div style="width: 130px;">
                             <label class="form-label fw-bold d-block">Show</label>
                             <select id="ddlPageSize" class="form-control">
@@ -869,6 +1123,7 @@
                             </select>
                         </div>
                         &nbsp;&nbsp;&nbsp;
+                       
                         <div class="mt-4">
                             <button type="button" id="btnRefresh" class="btn btn-outline-danger" onclick="clearFilters();" title="Reset filters">
                                 <i class="bi bi-arrow-clockwise"></i>
@@ -877,12 +1132,30 @@
                     </div>
                 </div>
 
-                <div class="row align-items-center" id="dealerFilterWrapper">
-                    <div class="col-12 col-md-3 mb-2 mb-md-0">
+                <div class="row align-items-center">
+                    <div class="col-12 col-md-5 mb-2 mb-md-0" id="salesPersonWrapper">
+                        <div class="row align-items-end">
+                            <div class="col-12 col-md-6 mb-2 mb-md-0">
+                                <label class="form-label fw-bold">Sales Person</label>
+                                <select id="ddlSalesPerson" class="form-control"></select>
+                            </div>
+                            <div class="col-12 col-md-3 d-flex justify-content-start gap-2">
+                                <button type="button" id="btnAssign" class="btn btn-outline-success"
+                                    title="Assign selected leads to this Sales Person" onclick="assignSalesPerson();">
+                                    <i class="bi bi-person-check-fill"></i>
+                                </button>
+                                <button type="button" id="btnSearch" class="btn btn-outline-primary d-none" title="Search leads assigned to this Sales Person"
+                                    onclick="searchData();">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 mb-2 mb-md-0" id="dealerFilterWrapper">
                         <label class="form-label fw-bold">Dealer</label>
                         <select id="ddlDealerFilter" class="form-control" multiple="multiple"></select>
                     </div>
-                    <div class="col-12 col-md-9 mb-2 mb-md-0">
+                    <div class="col-12 col-md-4 mb-2 mb-md-0" id="dealerBadgesWrapper">
                         <div id="selectedDealerBadges" class="dealer-badge-grid"></div>
                     </div>
                 </div>
@@ -892,14 +1165,21 @@
                 <table class="table leads-table" id="leadsTable">
                     <thead>
                         <tr>
-                            <th style="text-align: center;">Sr No.</th>
-                            <th style="text-align: center;">Name</th>
-                            <th style="text-align: center;">Mobile Number</th>
-                            <th style="text-align: center;">Message</th>
-                            <th style="text-align: center;">Enquiry Date</th>
-                            <th style="text-align: center;">Status</th>
-                            <th style="text-align: center;">Assign Dealer</th>
-                            <th style="text-align: center;">Follow Up</th>
+                            <th id="thCheckbox" class="col-checkbox text-center">
+                                <input type="checkbox"
+                                    id="chkSelectAll"
+                                    onclick="toggleSelectAll(this)"
+                                    title="Select all" />
+                            </th>
+                            <th class="col-sr text-center">Sr No.</th>
+                            <th class="col-personal text-center">Name</th>
+                            <th class="col-status text-center">Mobile Number</th>
+                            <th class="col-other text-center">Message</th>
+                            <th class="col-status text-center">Enquiry Date</th>
+                            <th id="thSalesPerson" class="col-sales text-center">Sales Person</th>
+                            <th class="col-status text-center">Status</th>
+                            <th id="thAssign" class="col-assign text-center">Assign Dealer</th>
+                            <th class="col-follow text-center">Follow Up</th>
                         </tr>
                     </thead>
                     <tbody id="leadsTableBody"></tbody>
@@ -964,7 +1244,7 @@
 
                                         <label class="form-label">
                                             Follow Up Date
-                                   
+                                           
                                             <span id="spReminder"
                                                 style="display: none; color: red">*</span>
                                         </label>
@@ -987,7 +1267,6 @@
 
                                         <i class="fa fa-save"></i>
                                         Save Follow Up
-
                                    
                                     </button>
 
@@ -997,7 +1276,6 @@
 
                                         <i class="fa fa-history"></i>
                                         View History
-
                                    
                                     </button>
 
@@ -1022,7 +1300,6 @@
 
                                         <i class="fa fa-arrow-left"></i>
                                         Back
-
                                    
                                     </button>
 
@@ -1037,7 +1314,6 @@
                     </div>
                 </div>
             </div>
-
 
             <!-- Assign Dealer Modal -->
             <div class="modal fade" id="assignDealerModal" tabindex="-1">
@@ -1067,6 +1343,7 @@
                         <div class="modal-footer">
                             <button class="btn btn-success" onclick="SaveDealerAssignment();">
                                 Assign Dealer
+                           
                             </button>
                         </div>
                     </div>

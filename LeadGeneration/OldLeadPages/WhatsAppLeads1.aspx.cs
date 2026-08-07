@@ -5,12 +5,14 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
-using System.Web;
+using System.Web.Security;
 using System.Web.Services;
 
-public partial class WhatsAppLeads : System.Web.UI.Page
+public partial class WhatsAppLeads1 : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -124,55 +126,124 @@ public partial class WhatsAppLeads : System.Web.UI.Page
     }
 
     [WebMethod]
-    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate, string salesPersonFilter)
+    public static string SearchLeads(string searchTerm, int pageSize, string statusFilter, string assignedFilter, string dealerFilter, string fromDate, string toDate)
     {
         string conString = ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString;
+        DataTable dt = new DataTable();
 
         string role = System.Web.HttpContext.Current.Session["Role"] != null
                ? System.Web.HttpContext.Current.Session["Role"].ToString() : "";
         string userId = System.Web.HttpContext.Current.Session["ID"] != null
             ? System.Web.HttpContext.Current.Session["ID"].ToString() : "";
 
-        DataTable dt = new DataTable();
-
         using (SqlConnection con = new SqlConnection(conString))
         {
+
             using (SqlCommand cmd = new SqlCommand("SP_InsertWhatsappLead", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@Action", "WhatsAppList");
-                cmd.Parameters.AddWithValue("@Search", searchTerm ?? "");
-                cmd.Parameters.AddWithValue("@ShowRecords", pageSize);
-                cmd.Parameters.AddWithValue("@Status", statusFilter ?? "");
-                cmd.Parameters.AddWithValue("@AssignedFilter", assignedFilter ?? "");
-                cmd.Parameters.AddWithValue("@FromDate", string.IsNullOrEmpty(fromDate) ? (object)DBNull.Value : fromDate);
-                cmd.Parameters.AddWithValue("@ToDate", string.IsNullOrEmpty(toDate) ? (object)DBNull.Value : toDate);
-                cmd.Parameters.AddWithValue("@Role", role);
-                cmd.Parameters.AddWithValue("@Id", string.IsNullOrEmpty(userId) ? (object)DBNull.Value : userId);
-                cmd.Parameters.AddWithValue("@DealerIds", string.IsNullOrEmpty(dealerFilter) ? (object)DBNull.Value : dealerFilter);
-                cmd.Parameters.AddWithValue("@SalesPersonId", string.IsNullOrEmpty(salesPersonFilter) ? (object)DBNull.Value : salesPersonFilter);
+                cmd.Parameters.AddWithValue("@Action", "Getwhatsappleads");
 
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
             }
         }
 
+        DataView dv = dt.DefaultView;
+
+        List<string> filters = new List<string>();
+
+        if (role == "Dealer")
+        {
+            filters.Add(string.Format("Convert(AssignTo, System.String) = '{0}'", userId.Replace("'", "''")));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            string term = searchTerm.Replace("'", "''");
+            filters.Add(string.Format(
+                "(Convert(Name, System.String) LIKE '%{0}%' OR Convert(MobileNumber, System.String) LIKE '%{0}%' OR Convert(Service, System.String) LIKE '%{0}%')",
+                term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            filters.Add(string.Format("Status = '{0}'", statusFilter.Replace("'", "''")));
+        }
+
+        if (role != "Dealer")
+        {
+            if (!string.IsNullOrWhiteSpace(assignedFilter))
+            {
+                if (assignedFilter == "Assigned")
+                    filters.Add("(AssignTo IS NOT NULL AND AssignTo <> '')");
+                else if (assignedFilter == "Not Assigned")
+                    filters.Add("(AssignTo IS NULL OR AssignTo = '')");
+            }
+
+            if (!string.IsNullOrWhiteSpace(dealerFilter))
+            {
+                var ids = dealerFilter.Split(',')
+                    .Select(x => x.Trim().Replace("'", "''"))
+                    .Where(x => x.Length > 0)
+                    .Select(x => "'" + x + "'");
+
+                filters.Add(string.Format("Convert(AssignTo, System.String) IN ({0})", string.Join(",", ids)));
+            }
+        }
+
+
+        bool hasFromDate = !string.IsNullOrWhiteSpace(fromDate);
+        bool hasToDate = !string.IsNullOrWhiteSpace(toDate);
+
+        if (hasFromDate && hasToDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate >= '{0}' AND FilterDate <= '{1}'",
+                fromDate,
+                toDate));
+        }
+        else if (hasFromDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate = '{0}'",
+                fromDate));
+        }
+        else if (hasToDate)
+        {
+            filters.Add(string.Format(
+                "FilterDate = '{0}'",
+                toDate));
+        }
+
+        if (filters.Count > 0)
+        {
+            dv.RowFilter = string.Join(" AND ", filters);
+        }
+
+
+        dv.Sort = "CreatedAt1 DESC";
+
         List<Dictionary<string, object>> results = new List<Dictionary<string, object>>();
 
-        foreach (DataRow row in dt.Rows)
+        int count = 0;
+        foreach (DataRowView row in dv)
         {
+            if (pageSize > 0 && count >= pageSize) break;
+
             Dictionary<string, object> item = new Dictionary<string, object>();
             item["LeadID"] = row["LeadID"].ToString();
             item["Name"] = row["Name"] == DBNull.Value ? "" : row["Name"].ToString();
             item["MobileNumber"] = row["MobileNumber"] == DBNull.Value ? "" : row["MobileNumber"].ToString();
             item["Service"] = row["Service"] == DBNull.Value ? "" : row["Service"].ToString();
-            item["CreatedAt"] = row["CreatedDate"].ToString();
+            item["CreatedAt"] = row["CreatedAt"] == DBNull.Value ? "" : row["CreatedAt"];
             item["CustomerURL"] = row["CustomerURL"] == DBNull.Value ? "" : row["CustomerURL"].ToString();
             item["Status"] = row["Status"] == DBNull.Value ? "" : row["Status"].ToString();
-            item["AssignTo"] = row["AssignedTo"] == DBNull.Value ? "" : row["AssignedTo"].ToString();
-            item["SalesPerson"] = row["SalesPerson"] == DBNull.Value ? "" : row["SalesPerson"].ToString();
+            item["AssignTo"] = row["AssignTo"] == DBNull.Value ? "" : row["AssignTo"].ToString();
+            item["FeedbackHistory"] = row["FeedbackHistory"] == DBNull.Value ? "" : row["FeedbackHistory"].ToString();
 
             results.Add(item);
+            count++;
         }
 
         return JsonConvert.SerializeObject(results);
@@ -196,7 +267,7 @@ public partial class WhatsAppLeads : System.Web.UI.Page
             }
         }
 
-        // SP's 'GetDealer' action returns: ID, Dealer (FullName aliased as Dealer)
+        // SP's 'GetDealer' action returns: ID, UserCode, Dealer (FullName aliased as Dealer)
         List<Dictionary<string, string>> dealers = new List<Dictionary<string, string>>();
         foreach (DataRow row in dt.Rows)
         {
@@ -207,32 +278,6 @@ public partial class WhatsAppLeads : System.Web.UI.Page
         }
 
         return JsonConvert.SerializeObject(dealers);
-    }
-
-    [WebMethod]
-    public static string GetSalesPerson()
-    {
-        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
-        {
-            using (SqlCommand cmd = new SqlCommand(
-                "SELECT ID, FullName as SalesPerson FROM tbl_UserMaster WHERE ISNULL(IsDeleted,0) = 0 AND UserRole='Sales' ORDER BY SalesPerson", con))
-            {
-                SqlDataAdapter da = new SqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                da.Fill(dt);
-
-                List<Dictionary<string, string>> salesPerson = new List<Dictionary<string, string>>();
-                foreach (DataRow row in dt.Rows)
-                {
-                    salesPerson.Add(new Dictionary<string, string> {
-                        { "ID", row["ID"].ToString() },
-                        { "SalesPerson", row["SalesPerson"].ToString() }
-                    });
-                }
-
-                return JsonConvert.SerializeObject(salesPerson);
-            }
-        }
     }
 
     [WebMethod]
@@ -285,7 +330,7 @@ public partial class WhatsAppLeads : System.Web.UI.Page
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@Action", "AssignDealer");
                     cmd.Parameters.AddWithValue("@Id", leadId);
-                    cmd.Parameters.AddWithValue("@DealerId", string.IsNullOrWhiteSpace(dealerId) ? (object)DBNull.Value : dealerId.Trim());
+                    cmd.Parameters.AddWithValue("@DealerId", dealerId.ToString().Trim());
 
                     if (string.IsNullOrEmpty(reminder))
                         cmd.Parameters.AddWithValue("@AdminReminderDate", DBNull.Value);
@@ -297,52 +342,12 @@ public partial class WhatsAppLeads : System.Web.UI.Page
                 }
             }
 
-            return string.IsNullOrWhiteSpace(dealerId) ? "Dealer Removed" : "Assigned";
+            return "Assigned";
         }
         catch (Exception ex)
         {
             return "Error : " + ex.Message;
         }
-    }
-
-    // New - was missing entirely, same as EnquiryList/LeadList
-    [WebMethod]
-    public static string AssignSalesPersonToLeads(string leadIds, string salesPersonId)
-    {
-        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
-        if (role == "Sales" || role == "Dealer")
-        {
-            return "Access Denied";
-        }
-
-        if (string.IsNullOrWhiteSpace(leadIds) || string.IsNullOrWhiteSpace(salesPersonId))
-        {
-            return "Please select at least one lead and a Sales Person.";
-        }
-
-        string[] ids = leadIds.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        int updatedCount = 0;
-
-        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString))
-        {
-            con.Open();
-
-            foreach (string rawId in ids)
-            {
-                string leadId = rawId.Trim();
-                if (leadId.Length == 0) continue;
-
-                using (SqlCommand cmd = new SqlCommand(
-                    "UPDATE Tbl_Whatsuplead SET SalesPerson = @SalesPersonId, SalesPersonAssDate = GETDATE() WHERE Id = @ID", con))
-                {
-                    cmd.Parameters.AddWithValue("@SalesPersonId", salesPersonId);
-                    cmd.Parameters.AddWithValue("@ID", leadId);
-                    updatedCount += cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        return updatedCount + " lead(s) assigned to Sales Person successfully.";
     }
 
     [WebMethod]
@@ -379,50 +384,5 @@ public partial class WhatsAppLeads : System.Web.UI.Page
         {
             return "Error : " + ex.Message;
         }
-    }
-
-    // New - fetched on demand when the modal opens (same pattern as LeadList / EnquiryList),
-    // instead of relying on a pre-baked FeedbackHistory string returned with every search result.
-    [WebMethod]
-    public static string GetFollowUpHistory(int leadId)
-    {
-        DataTable dt = new DataTable();
-
-        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString))
-        {
-            SqlCommand cmd = new SqlCommand(@"
-            SELECT
-                CONVERT(varchar(20), h.CreatedAt, 105) AS FollowDate,
-                h.Feedback,
-                h.Status,
-                CONVERT(varchar(20), h.FollowupDate, 105) AS NextReminder,
-                UM.FullName AS UserName
-            FROM Tbl_Whatsuplead_FeedbackHistory h
-            LEFT JOIN tbl_UserMaster UM
-            ON UM.ID = h.UserName
-            WHERE h.WhatsupLeadId = @LeadId
-            ORDER BY h.CreatedAt DESC", con);
-
-            cmd.Parameters.AddWithValue("@LeadId", leadId);
-
-            SqlDataAdapter da = new SqlDataAdapter(cmd);
-            da.Fill(dt);
-        }
-
-        List<object> list = new List<object>();
-
-        foreach (DataRow dr in dt.Rows)
-        {
-            list.Add(new
-            {
-                FollowDate = dr["FollowDate"].ToString(),
-                Feedback = dr["Feedback"].ToString(),
-                Status = dr["Status"].ToString(),
-                NextReminder = dr["NextReminder"].ToString(),
-                UserName = dr["UserName"].ToString()
-            });
-        }
-
-        return JsonConvert.SerializeObject(list);
     }
 }

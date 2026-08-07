@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Net.Mail;
 using System.ServiceModel.MsmqIntegration;
+using System.Text;
 using System.Web;
 using System.Web.Security;
 using System.Web.Services;
@@ -302,6 +303,32 @@ public partial class Login : System.Web.UI.Page
             client.Send(message);
             client.Disconnect(true);
         }
+
+
+        //SMTP OUT Code 
+
+        //MailMessage message = new MailMessage();
+        //message.From = new MailAddress("info@acryshade.com");
+        //message.To.Add(toEmail);
+        //message.Body =
+        //   "Your OTP for resetting your Acryshade Laminates account password is: " + otp +
+        //           "\n\nThis code expires in 10 minutes. If you did not request this, please ignore this email.";
+
+
+        //SmtpClient SmtpMail = new SmtpClient();
+        //SmtpMail.Host = "us2.smtp.mailhostbox.com"; // Name or IP-Address of Host used for SMTP transactions  
+        //SmtpMail.Port = 25; // Port for sending the mail  
+        //SmtpMail.Credentials = new System.Net.NetworkCredential("info@acryshade.com", "ffofXw6yenr:!"); // Username/password of network, if apply  
+        //SmtpMail.DeliveryMethod = SmtpDeliveryMethod.Network;
+        //SmtpMail.EnableSsl = false;
+
+        //SmtpMail.ServicePoint.MaxIdleTime = 0;
+        //SmtpMail.ServicePoint.SetTcpKeepAlive(true, 2000, 2000);
+        //message.BodyEncoding = Encoding.Default;
+        //message.Priority = MailPriority.High;
+        //SmtpMail.Send(message);
+
+
     }
 }
 
