@@ -628,7 +628,7 @@ public partial class WoProductionS1 : System.Web.UI.Page
                     totalCompletedQty = obj == DBNull.Value ? 0 : Convert.ToDecimal(obj);
                 }
 
-                if (totalCompletedQty == originalQty)
+                if (originalQty >= totalCompletedQty)
                 {
                     headerStatus = "Completed";
 

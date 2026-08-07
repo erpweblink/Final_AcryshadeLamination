@@ -1,9 +1,6 @@
 <%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" EnableEventValidation="false" AutoEventWireup="true" Async="true" CodeFile="DealerMaster.aspx.cs" Inherits="DealerMaster" %>
 
-
 <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
-
-
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
     <style type="text/css">
         .spncls {
@@ -181,6 +178,13 @@
                             <asp:TextBox ID="txtUANNo" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-4 col-12">
+                            <asp:Label ID="Label1" runat="server" Font-Bold="true" CssClass="form-label">Website Link:</asp:Label>
+                            <asp:TextBox ID="txtWebsite" runat="server" AutoComplete="off" CssClass="form-control"></asp:TextBox>
+                        </div>
+                    </div>
+                    <br />
                     <h5 class="fw-bold">Billing Details</h5>
                     <hr />
                     <div class="row">
@@ -231,7 +235,7 @@
                     <div class="row">
                         <div class="col-md-4 col-12">
                             <asp:Label ID="lblshipAddress" runat="server" Font-Bold="true" CssClass="form-label"><span class="spncls">*</span>Shipping Address:</asp:Label>
-                            <asp:TextBox TextMode="MultiLine" ID="txtShipAddress" runat="server" CssClass="form-control" ></asp:TextBox>
+                            <asp:TextBox TextMode="MultiLine" ID="txtShipAddress" runat="server" CssClass="form-control"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="RequiredFieldValidator12" runat="server" ErrorMessage="Please Enter Shipping Address"
                                 ControlToValidate="txtShipAddress" ForeColor="Red" InitialValue="" SetFocusOnError="true" ValidationGroup="001"></asp:RequiredFieldValidator>
                         </div>

@@ -105,6 +105,10 @@
             transform: rotate(-25deg);
         }
 
+        #btnTrash:hover {
+            transform: rotate(-25deg);
+        }
+
         /* ===== Table ===== */
         .leads-table {
             border: none !important;
@@ -142,7 +146,7 @@
         }
 
         .col-assign {
-            width: 200px;
+            width: 280px;
         }
 
         .col-follow {
@@ -586,26 +590,28 @@
 
                 var assignTdHtml = "";
                 if (showAssignColumn) {
-                    var assignCellHtml;
+                    var dealerOptions = '<option value="">-- Select Dealer --</option>';
+                    dealersList.forEach(function (dealer) {
+                        var selected = (dealer.ID === lead.AssignedTo) ? "selected" : "";
+                        dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
+                    });
 
-                    if (currentUserRole === "Dealer") {
-                        var assignedDealer = dealersList.find(function (d) { return d.ID === lead.AssignTo; });
-                        var dealerName = assignedDealer ? escapeHtml(assignedDealer.DealerName) : "-";
-                        assignCellHtml = '<span class="fw-bold"><i>' + dealerName + '</i></span>';
-                    } else {
-                        var dealerOptions = '<option value="">-- Select Dealer --</option>';
-                        dealersList.forEach(function (dealer) {
-                            var selected = (dealer.ID === lead.AssignTo) ? "selected" : "";
-                            dealerOptions += '<option value="' + dealer.ID + '" ' + selected + '>' + escapeHtml(dealer.DealerName) + '</option>';
-                        });
-                        assignCellHtml =
-                            '<select class="form-control ddl-dealer" data-lead-id="' + lead.LeadID + '">' +
-                            dealerOptions +
-                            '</select>';
-                    }
+                    // Show copy icon immediately if a dealer is already assigned on render
+                    var copyIconDisplay = lead.AssignedTo ? "inline-block" : "none";
+
+                    var assignCellHtml =
+                        '<div style="display:flex; align-items:center; gap:6px;">' +
+                        '<select class="form-control ddl-dealer" data-lead-id="' + lead.ID + '">' +
+                        dealerOptions +
+                        '</select>' +
+                        '<i class="bi bi-copy copy-dealer-icon" ' +
+                        'data-lead-id="' + lead.ID + '" ' +
+                        'title="Copy dealer details" ' +
+                        'style="cursor:pointer; color:#1a4fc8; font-size:19px; display:' + copyIconDisplay + ';"></i>' +
+                        '</div>';
 
                     assignTdHtml =
-                        '<td class="col-assign" data-label="Assign Dealer" style="text-align:center;">' +
+                        '<td class="col-assign" data-label="Assign Lead" style="text-align:center;">' +
                         assignCellHtml +
                         '</td>';
                 }
@@ -619,7 +625,7 @@
                     checkboxCellHtml +
                     '<td data-label="Sr No." style="text-align:center;">' + (index + 1) + '</td>' +
                     '<td data-label="Name">' + escapeHtml(lead.Name) + '</td>' +
-                    '<td data-label="Mobile Number">' + escapeHtml(lead.MobileNumber) + '</td>' +
+                    '<td data-label="Mobile Number">' + formatMobileNumberCell(lead.MobileNumber) + '</td>' +
                     '<td data-label="Message"><div class="scroll-box">' + escapeHtml(lead.Service) + '</div></td>' +
                     '<td data-label="Inquiry Date" class="lead-date-cell">' + lead.CreatedAt + '</td>' +
                     salesPersonTdHtml +
@@ -643,6 +649,51 @@
             });
 
             initDealerDropdowns();
+        }
+
+        function formatMobileNumberCell(mobileNumber) {
+            if (!mobileNumber) return "";
+
+            var waLink = getWhatsappLink(mobileNumber);
+            if (!waLink) {
+                return escapeHtml(mobileNumber);
+            }
+
+            return '<a href="' + waLink + '" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; color:#2d6be0; font-weight:600;">' +
+                escapeHtml(mobileNumber) +
+                getWhatsappIconSvg() +
+                '</a>';
+        }
+
+        function getWhatsappIconSvg() {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" style="vertical-align:middle;">' +
+                '<path fill="#25D366" d="M16.001 3C9.373 3 4 8.373 4 15c0 2.386.7 4.61 1.902 6.481L4 29l7.72-1.87A11.94 11.94 0 0 0 16.001 27C22.629 27 28 21.627 28 15S22.629 3 16.001 3z"/>' +
+                '<path fill="#FFF" d="M22.32 19.29c-.29.82-1.44 1.51-2.35 1.7-.63.13-1.45.24-4.22-.91-3.54-1.47-5.82-5.05-6-5.29-.17-.24-1.44-1.92-1.44-3.66 0-1.74.9-2.6 1.22-2.95.29-.32.66-.4.88-.4.22 0 .44.002.63.01.2.01.47-.08.74.56.29.68.97 2.35 1.06 2.52.09.17.15.36.03.6-.12.24-.18.38-.36.58-.18.2-.38.44-.54.6-.18.17-.37.36-.16.7.21.35.93 1.53 2 2.48 1.37 1.22 2.53 1.6 2.88 1.78.35.17.55.15.76-.09.21-.24.9-1.05 1.14-1.4.24-.35.47-.29.79-.17.32.12 2.02.95 2.37 1.12.35.17.58.26.66.4.09.16.09.87-.2 1.69z"/>' +
+                '</svg>';
+        }
+
+        function getWhatsappLink(value) {
+            if (!value) return null;
+
+            var cleaned = String(value).trim();
+            var digitsOnly = cleaned.replace(/[^\d+]/g, "");
+
+            var withCountryCodeMatch = digitsOnly.match(/^\+(\d{1,3})(\d{10})$/);
+            if (withCountryCodeMatch) {
+                return "https://wa.me/" + withCountryCodeMatch[1] + withCountryCodeMatch[2];
+            }
+
+            var noPlusMatch = digitsOnly.match(/^(91|1|44|61|971)(\d{10})$/);
+            if (noPlusMatch) {
+                return "https://wa.me/" + noPlusMatch[1] + noPlusMatch[2];
+            }
+
+            var plainTenDigit = digitsOnly.match(/^\d{10}$/);
+            if (plainTenDigit) {
+                return "https://wa.me/91" + digitsOnly;
+            }
+
+            return null;
         }
 
         function ChangeStatusColor(ctrl) {
@@ -834,6 +885,28 @@
             );
         }
 
+        function removeData() {
+
+            var selectedLeadIds = getSelectedLeadIds();
+
+            if (selectedLeadIds.length === 0) {
+                alert("Please select at least one lead using the checkboxes.");
+                return;
+            }
+
+            PageMethods.RemoveLeads(
+                selectedLeadIds.join(","),
+                function (msg) {
+                    alert(msg);
+                    $("#chkSelectAll").prop("checked", false);
+                    searchLeads();
+                },
+                function (error) {
+                    alert("Failed to assign Sales Person: " + error.get_message());
+                }
+            );
+        }
+
         function searchData() {
             searchLeads();
         }
@@ -942,6 +1015,109 @@
                 searchLeads();
             });
         });
+
+        // Show/hide copy icon whenever a dealer is picked/cleared
+        $(document).on("change", ".ddl-dealer", function () {
+            var $icon = $(this).closest("div").find(".copy-dealer-icon");
+            var dealerId = $(this).val();
+            $icon.css("display", dealerId ? "inline-block" : "none");
+        });
+
+        // Copy dealer details when the icon is clicked
+        $(document).on("click", ".copy-dealer-icon", function () {
+            var $icon = $(this);
+            var $select = $icon.closest("div").find(".ddl-dealer");
+            var dealerId = $select.val();
+
+            if (!dealerId) return;
+
+            var originalClass = $icon.attr("class");
+            $icon.removeClass("bi-copy").addClass("bi-hourglass-split");
+
+            PageMethods.GetDealerDetails(dealerId, function (result) {
+                var dealer = JSON.parse(result);
+                var formatted = formatDealerDetails(dealer);
+
+                copyRichTextToClipboard(formatted.html, formatted.plainText);
+
+                $icon.attr("class", originalClass);
+                $icon.removeClass("bi-copy").addClass("bi-check2").css("color", "#28a745");
+                setTimeout(function () {
+                    $icon.attr("class", originalClass).css("color", "#1a4fc8");
+                }, 1200);
+            }, function (error) {
+                $icon.attr("class", originalClass);
+                alert("Failed to fetch dealer details: " + error.get_message());
+            });
+        });
+
+        function formatDealerDetails(dealer) {
+            var labelMap = {
+                DealerName: "Dealer Name",
+                CompanyName: "Company Name",
+                MobileNo: "Mobile",
+                Email: "Email",
+                Address: "Address",
+                City:"City"
+            };
+
+            var dealerName = (dealer.DealerName || "").trim();
+            var companyName = (dealer.CompanyName || "").trim();
+            var showCompanyName = companyName && companyName.toLowerCase() !== dealerName.toLowerCase();
+
+            var order = ["DealerName", "CompanyName", "MobileNo", "Email", "Address", "City"];
+
+            var htmlLines = [];
+            var textLines = [];
+
+            order.forEach(function (key) {
+                if (key === "CompanyName" && !showCompanyName) return;
+
+                if (!dealer.hasOwnProperty(key)) return;
+                var value = dealer[key];
+                if (!value) return;
+
+                var label = labelMap[key] || key;
+
+                htmlLines.push(
+                    '<div style="margin-bottom:8px; line-height:1.6;">' +
+                    '<b>' + escapeHtml(label) + ':</b> ' + escapeHtml(value) +
+                    '</div>'
+                );
+
+                textLines.push(label + ": " + value);
+            });
+
+            return {
+                html: htmlLines.join(""),
+                plainText: textLines.join("\n\n")
+            };
+        }
+
+        function copyRichTextToClipboard(html, plainText) {
+            if (navigator.clipboard && window.ClipboardItem) {
+                var htmlBlob = new Blob([html], { type: "text/html" });
+                var textBlob = new Blob([plainText], { type: "text/plain" });
+
+                var item = new ClipboardItem({
+                    "text/html": htmlBlob,
+                    "text/plain": textBlob
+                });
+
+                navigator.clipboard.write([item]).catch(function () {
+                    fallbackCopy(plainText);
+                });
+            } else {
+                fallbackCopy(plainText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            var $temp = $("<textarea>").val(text).css({ position: "fixed", left: "-9999px" }).appendTo("body");
+            $temp[0].select();
+            try { document.execCommand("copy"); } catch (e) { }
+            $temp.remove();
+        }
 
         $(document).on("select2:select", ".ddl-dealer", function () {
             AssignDealer(this);
@@ -1147,6 +1323,10 @@
                                 <button type="button" id="btnSearch" class="btn btn-outline-primary d-none" title="Search leads assigned to this Sales Person"
                                     onclick="searchData();">
                                     <i class="bi bi-search"></i>
+                                </button>
+                                <button type="button" id="btnTrash" class="btn btn-outline-danger" title="Delete Lead"
+                                    onclick="removeData();">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </div>

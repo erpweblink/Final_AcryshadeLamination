@@ -101,7 +101,6 @@ public partial class WoProductionS2 : System.Web.UI.Page
         return JsonConvert.SerializeObject(dt);
     }
 
-
     [WebMethod]
     public static object SaveMachineStatus(int machineId, bool isActive, string reason, string workOrderIDs)
     {
@@ -412,7 +411,7 @@ public partial class WoProductionS2 : System.Web.UI.Page
                 // 4.To Update Header Status
                 int TotatQty = 0, CompletedssQty = 0;
 
-                string getTotatQtyQuery = @"SELECT ISNULL(SUM(CAST(TotalQty as decimal)),0) as TotalQty
+                string getTotatQtyQuery = @"SELECT ISNULL(SUM(CAST(TotalQty as int)),0) as TotalQty
                     FROM tbl_MachineProductionDTLS MPD
                     LEFT JOIN tbl_MachineProductionHDR MPH ON MPH.ID = MPD.HeaderID 
                     WHERE MPH.WorkOrderID = @DetailedId";
@@ -429,7 +428,7 @@ public partial class WoProductionS2 : System.Web.UI.Page
                     }
                 }
 
-                string getCompletedQtyQuery = @"SELECT ISNULL(SUM(CAST(CompletedQty as decimal)),0) as CompletedQty
+                string getCompletedQtyQuery = @"SELECT ISNULL(SUM(CAST(CompletedQty as int)),0) as CompletedQty
                         FROM tbl_MachineProductionAllocation MPA
                         LEFT JOIN tbl_MachineProductionDTLS MPD ON MPD.ID = MPA.ProductDtlID
                         LEFT JOIN tbl_MachineProductionHDR MPH ON  MPH.ID = MPD.HeaderID
@@ -448,10 +447,10 @@ public partial class WoProductionS2 : System.Web.UI.Page
                     }
                 }
 
-                if (TotatQty == CompletedssQty)
+                if (CompletedssQty >= TotatQty)
                 {
                     string updateHeaderQuery = @"UPDATE tbl_MachineProductionHDR SET S2Status = 'Completed' 
-                WHERE WorkOrderID =  @DetailedId";
+                   WHERE WorkOrderID =  @DetailedId";
 
                     using (SqlCommand cmupdateHeaderQueryd = new SqlCommand(updateHeaderQuery, con))
                     {

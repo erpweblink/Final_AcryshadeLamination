@@ -118,6 +118,38 @@ public partial class LeadList : System.Web.UI.Page
     }
 
     [WebMethod]
+    public static string GetDealerDetails(string dealerId)
+    {
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            using (SqlCommand cmd = new SqlCommand(
+                @"SELECT ID, FullName AS DealerName,CompanyName AS CompanyName, MobileNo, EmailId AS Email, 
+                 BillAddress AS Address,ISNULL(BillCity,'INDIA') AS City FROM tbl_UserMaster 
+              WHERE ID = @ID AND ISNULL(IsDeleted,0) = 0", con))
+            {
+                cmd.Parameters.AddWithValue("@ID", dealerId);
+                con.Open();
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        Dictionary<string, string> dealer = new Dictionary<string, string>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            string colName = reader.GetName(i);
+                            string val = reader[i] == DBNull.Value ? "" : reader[i].ToString();
+                            dealer[colName] = val;
+                        }
+                        return JsonConvert.SerializeObject(dealer);
+                    }
+                }
+            }
+        }
+        return "{}";
+    }
+
+    [WebMethod]
     public static string GetSalesPerson()
     {
         using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
@@ -231,6 +263,46 @@ public partial class LeadList : System.Web.UI.Page
         }
 
         return updatedCount + " lead(s) assigned to Sales Person successfully.";
+    }
+
+    [WebMethod]
+    public static string RemoveLeads(string leadIds)
+    {
+        string role = HttpContext.Current.Session["Role"] != null ? HttpContext.Current.Session["Role"].ToString() : "";
+        string ActionBy = HttpContext.Current.Session["ID"] != null ? HttpContext.Current.Session["ID"].ToString() : "";
+        if (role == "Sales" || role == "Dealer")
+        {
+            return "Access Denied";
+        }
+
+        if (string.IsNullOrWhiteSpace(leadIds))
+        {
+            return "Please select at least one lead.";
+        }
+
+        string[] ids = leadIds.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        int updatedCount = 0;
+
+        using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["constr"].ConnectionString))
+        {
+            con.Open();
+
+            foreach (string rawId in ids)
+            {
+                string leadId = rawId.Trim();
+                if (leadId.Length == 0) continue;
+
+                using (SqlCommand cmd = new SqlCommand(
+                    "UPDATE tbl_MetaLeads SET IsDeleted = 1, DeletedBy = @ActionBy, DeletedOn= GETDATE() WHERE ID = @ID", con))
+                {
+                    cmd.Parameters.AddWithValue("@ID", leadId);
+                    cmd.Parameters.AddWithValue("@ActionBy", ActionBy);
+                    updatedCount += cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        return updatedCount + " lead(s) deleted successfully.";
     }
 
     [WebMethod]

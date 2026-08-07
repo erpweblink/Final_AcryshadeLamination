@@ -7,8 +7,6 @@ using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web.UI;
-using System.Web.UI.WebControls;
-using System.Windows.Controls.Primitives;
 
 
 public partial class DealerMaster : System.Web.UI.Page
@@ -80,6 +78,7 @@ public partial class DealerMaster : System.Web.UI.Page
             txtGstNo.Text = dt.Rows[0]["GstNo"].ToString();
             txtPanCard.Text = dt.Rows[0]["PanCardNo"].ToString();
             txtUANNo.Text = dt.Rows[0]["UANNo"].ToString();
+            txtWebsite.Text = dt.Rows[0]["WebsiteUrl"].ToString();
             txtBillAddress.Text = dt.Rows[0]["BillAddress"].ToString();
             txtBillArea.Text = dt.Rows[0]["BillArea"].ToString();
             txtBillPinCode.Text = dt.Rows[0]["BillPinCode"].ToString();
@@ -102,27 +101,28 @@ public partial class DealerMaster : System.Web.UI.Page
         {
             cmd.CommandType = CommandType.StoredProcedure;
 
-            cmd.Parameters.Add("@FullName", SqlDbType.VarChar).Value = txtUserFName.Text;
-            cmd.Parameters.Add("@CompanyName", SqlDbType.VarChar).Value = txtComName.Text;
-            cmd.Parameters.Add("@MobileNo", SqlDbType.VarChar).Value = txtMobileNo.Text;
-            cmd.Parameters.Add("@EmialId", SqlDbType.VarChar).Value = txtEmailID.Text;
+            cmd.Parameters.Add("@FullName", SqlDbType.VarChar).Value = txtUserFName.Text.Trim();
+            cmd.Parameters.Add("@CompanyName", SqlDbType.VarChar).Value = txtComName.Text.Trim();
+            cmd.Parameters.Add("@MobileNo", SqlDbType.VarChar).Value = txtMobileNo.Text.Trim();
+            cmd.Parameters.Add("@EmialId", SqlDbType.VarChar).Value = txtEmailID.Text.Trim();
             cmd.Parameters.Add("@Password", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(hdnPass.Value) ? Generate4DigitPassword() : hdnPass.Value;
             cmd.Parameters.Add("@Type", SqlDbType.VarChar).Value = ddlUserType.SelectedValue;
-            cmd.Parameters.Add("@GstNo", SqlDbType.VarChar).Value = txtGstNo.Text;
-            cmd.Parameters.Add("@PanCardNo", SqlDbType.VarChar).Value = txtPanCard.Text;
-            cmd.Parameters.Add("@UANNo", SqlDbType.VarChar).Value = txtUANNo.Text;
-            cmd.Parameters.Add("@BillAddress", SqlDbType.VarChar).Value = txtBillAddress.Text;
-            cmd.Parameters.Add("@BillArea", SqlDbType.VarChar).Value = txtBillArea.Text;
-            cmd.Parameters.Add("@BillPinCode", SqlDbType.VarChar).Value = txtBillPinCode.Text;
-            cmd.Parameters.Add("@BillState", SqlDbType.VarChar).Value = txtBillState.Text;
-            cmd.Parameters.Add("@BillCity", SqlDbType.VarChar).Value = txtBillCity.Text;
-            cmd.Parameters.Add("@BillCountry", SqlDbType.VarChar).Value = txtBillCountry.Text;
-            cmd.Parameters.Add("@ShipAddress", SqlDbType.VarChar).Value = txtShipAddress.Text;
-            cmd.Parameters.Add("@ShipArea", SqlDbType.VarChar).Value = txtShipArea.Text;
-            cmd.Parameters.Add("@ShipPinCode", SqlDbType.VarChar).Value = txtShipPinCode.Text;
-            cmd.Parameters.Add("@ShipState", SqlDbType.VarChar).Value = txtShipState.Text;
-            cmd.Parameters.Add("@ShipCity", SqlDbType.VarChar).Value = txtShipCity.Text;
-            cmd.Parameters.Add("@ShipCountry", SqlDbType.VarChar).Value = txtShipCountry.Text;
+            cmd.Parameters.Add("@GstNo", SqlDbType.VarChar).Value = txtGstNo.Text.Trim();
+            cmd.Parameters.Add("@PanCardNo", SqlDbType.VarChar).Value = txtPanCard.Text.Trim();
+            cmd.Parameters.Add("@UANNo", SqlDbType.VarChar).Value = txtUANNo.Text.Trim();
+            cmd.Parameters.Add("@BillAddress", SqlDbType.VarChar).Value = txtBillAddress.Text.Trim();
+            cmd.Parameters.Add("@BillArea", SqlDbType.VarChar).Value = txtBillArea.Text.Trim();
+            cmd.Parameters.Add("@BillPinCode", SqlDbType.VarChar).Value = txtBillPinCode.Text.Trim();
+            cmd.Parameters.Add("@BillState", SqlDbType.VarChar).Value = txtBillState.Text.Trim();
+            cmd.Parameters.Add("@BillCity", SqlDbType.VarChar).Value = txtBillCity.Text.Trim();
+            cmd.Parameters.Add("@BillCountry", SqlDbType.VarChar).Value = txtBillCountry.Text.Trim();
+            cmd.Parameters.Add("@ShipAddress", SqlDbType.VarChar).Value = txtShipAddress.Text.Trim();
+            cmd.Parameters.Add("@ShipArea", SqlDbType.VarChar).Value = txtShipArea.Text.Trim();
+            cmd.Parameters.Add("@ShipPinCode", SqlDbType.VarChar).Value = txtShipPinCode.Text.Trim();
+            cmd.Parameters.Add("@ShipState", SqlDbType.VarChar).Value = txtShipState.Text.Trim();
+            cmd.Parameters.Add("@ShipCity", SqlDbType.VarChar).Value = txtShipCity.Text.Trim();
+            cmd.Parameters.Add("@ShipCountry", SqlDbType.VarChar).Value = txtShipCountry.Text.Trim();
+            cmd.Parameters.Add("@WebsiteUrl", SqlDbType.VarChar).Value = txtWebsite.Text.Trim();
             cmd.Parameters.Add("@UserRole", SqlDbType.VarChar).Value = "Dealer";
             cmd.Parameters.Add("@ActionBy", SqlDbType.VarChar).Value = Session["ID"].ToString();
 
