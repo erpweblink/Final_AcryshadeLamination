@@ -1069,7 +1069,8 @@
 
             if (currentUserRole === "Dealer") {
                 $("#ddlAssignedFilter").val("Assigned").prop("disabled", true);
-                $("#rolewiseView").addClass("role-hidden");
+               // $("#rolewiseView").addClass("role-hidden");
+                $("#btnSyncLeads").addClass("role-hidden");
                 $("#salesPersonWrapper").addClass("role-hidden");
                 $("#dealerFilterWrapper").addClass("role-hidden");
                 $("#dealerBadgesWrapper").addClass("role-hidden");
@@ -1080,6 +1081,7 @@
                 $("#lblAssignedFilter").text("Assigned/Not Assigned");
             } else if (currentUserRole === "Sales") {
                 $("#salesPersonWrapper").addClass("role-hidden");
+                $("#btnSyncLeads").addClass("role-hidden");
                 $("#thCheckbox").addClass("role-hidden");
                 $("#thSalesPerson").addClass("role-hidden");
                 $("#lblAssignedFilter").text("Dealer Assigned/Not Assigned");

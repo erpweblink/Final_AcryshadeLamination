@@ -7,6 +7,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style type="text/css">
         /* ===== Page & Card Container ===== */
@@ -1058,7 +1059,7 @@
                 MobileNo: "Mobile",
                 Email: "Email",
                 Address: "Address",
-                City:"City"
+                City: "City"
             };
 
             var dealerName = (dealer.DealerName || "").trim();

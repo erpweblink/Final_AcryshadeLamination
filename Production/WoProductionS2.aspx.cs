@@ -408,10 +408,11 @@ public partial class WoProductionS2 : System.Web.UI.Page
                     headerStatus = "Reduced";
                 }
 
+                #region Work Order Completion Check
                 // 4.To Update Header Status
-                int TotatQty = 0, CompletedssQty = 0;
+                decimal TotatQty = 0, CompletedssQty = 0;
 
-                string getTotatQtyQuery = @"SELECT ISNULL(SUM(CAST(TotalQty as int)),0) as TotalQty
+                string getTotatQtyQuery = @"SELECT ISNULL(SUM(CAST(TotalQty as decimal)),0) as TotalQty
                     FROM tbl_MachineProductionDTLS MPD
                     LEFT JOIN tbl_MachineProductionHDR MPH ON MPH.ID = MPD.HeaderID 
                     WHERE MPH.WorkOrderID = @DetailedId";
@@ -424,11 +425,11 @@ public partial class WoProductionS2 : System.Web.UI.Page
 
                     if (result != null && result != DBNull.Value)
                     {
-                        TotatQty = Convert.ToInt32(result);
+                        TotatQty = result == DBNull.Value ? 0 : Convert.ToDecimal(result);
                     }
                 }
 
-                string getCompletedQtyQuery = @"SELECT ISNULL(SUM(CAST(CompletedQty as int)),0) as CompletedQty
+                string getCompletedQtyQuery = @"SELECT ISNULL(SUM(CAST(CompletedQty as decimal)),0) as CompletedQty
                         FROM tbl_MachineProductionAllocation MPA
                         LEFT JOIN tbl_MachineProductionDTLS MPD ON MPD.ID = MPA.ProductDtlID
                         LEFT JOIN tbl_MachineProductionHDR MPH ON  MPH.ID = MPD.HeaderID
@@ -443,11 +444,11 @@ public partial class WoProductionS2 : System.Web.UI.Page
 
                     if (result != null && result != DBNull.Value)
                     {
-                        CompletedssQty = Convert.ToInt32(result);
+                        CompletedssQty = result == DBNull.Value ? 0 : Convert.ToDecimal(result);
                     }
                 }
 
-                if (CompletedssQty >= TotatQty)
+                if (TotatQty > 0 && CompletedssQty >= TotatQty)   // guarded
                 {
                     string updateHeaderQuery = @"UPDATE tbl_MachineProductionHDR SET S2Status = 'Completed' 
                    WHERE WorkOrderID =  @DetailedId";
@@ -486,6 +487,7 @@ public partial class WoProductionS2 : System.Web.UI.Page
 
                     headerStatus = "Completed";
                 }
+                #endregion
 
                 return new
                 {

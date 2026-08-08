@@ -599,42 +599,38 @@ public partial class WoProductionS1 : System.Web.UI.Page
                 decimal totalCompletedQty = 0;
 
                 string woQuery = @"
-            SELECT SUM(ISNULL(CAST(Qty as decimal),0))
-            FROM tbl_WorkOrderDetails
-            WHERE HeaderID = @WorkOrderID";
+                    SELECT SUM(ISNULL(CAST(Qty as decimal),0))
+                    FROM tbl_WorkOrderDetails
+                    WHERE HeaderID = @WorkOrderID";
 
                 using (SqlCommand cmd = new SqlCommand(woQuery, con))
                 {
                     cmd.Parameters.AddWithValue("@WorkOrderID", workOrderId);
-
                     object obj = cmd.ExecuteScalar();
                     originalQty = obj == DBNull.Value ? 0 : Convert.ToDecimal(obj);
                 }
 
                 string completedQuery = @"
-                SELECT SUM(ISNULL(CAST(CompletedQty as decimal),0))
-                FROM tbl_MachineProductionAllocation A
-                INNER JOIN  tbl_MachineProductionDTLS D
-                       ON D.ID = A.ProductDtlID
-                INNER JOIN tbl_MachineProductionHDR H
-                    ON H.ID = D.HeaderID
-                WHERE H.WorkOrderID = @WorkOrderID AND A.StageName= 'Stage 1'";
+                    SELECT SUM(ISNULL(CAST(CompletedQty as decimal),0))
+                    FROM tbl_MachineProductionAllocation A
+                    INNER JOIN tbl_MachineProductionDTLS D ON D.ID = A.ProductDtlID
+                    INNER JOIN tbl_MachineProductionHDR H ON H.ID = D.HeaderID
+                    WHERE H.WorkOrderID = @WorkOrderID AND A.StageName = 'Stage 1'";
 
                 using (SqlCommand cmd = new SqlCommand(completedQuery, con))
                 {
                     cmd.Parameters.AddWithValue("@WorkOrderID", workOrderId);
-
                     object obj = cmd.ExecuteScalar();
                     totalCompletedQty = obj == DBNull.Value ? 0 : Convert.ToDecimal(obj);
                 }
 
-                if (originalQty >= totalCompletedQty)
+                // FIXED: only mark Completed when completed has actually reached original
+                if (originalQty > 0 && totalCompletedQty >= originalQty)
                 {
                     headerStatus = "Completed";
 
                     string updateHeaderQuery = @"UPDATE tbl_MachineProductionHDR SET S1Status = 'Completed' 
-                WHERE WorkOrderID =  @DetailedId";
-
+                                  WHERE WorkOrderID = @DetailedId";
                     using (SqlCommand cmupdateHeaderQueryd = new SqlCommand(updateHeaderQuery, con))
                     {
                         cmupdateHeaderQueryd.Parameters.AddWithValue("@DetailedId", workOrderId);
@@ -642,16 +638,13 @@ public partial class WoProductionS1 : System.Web.UI.Page
                     }
 
                     string updateDateQuery = @"
-                   UPDATE MPA
-                    SET MPA.CompletedDate = GETDATE()
-                    FROM tbl_MachineProductionAllocation MPA
-                    INNER JOIN tbl_MachineProductionDTLS MPD
-                        ON MPD.ID = MPA.ProductDtlID
-                    INNER JOIN tbl_MachineProductionHDR MPH
-                        ON MPH.ID = MPD.HeaderID
-                    LEFT JOIN tbl_MachineMaster MM ON MPA.MachineID = MM.ID  
-                    WHERE MPH.WorkOrderID = @DetailedID AND MM.AllocatedStage = 'Stage 1'";
-
+                        UPDATE MPA
+                        SET MPA.CompletedDate = GETDATE()
+                        FROM tbl_MachineProductionAllocation MPA
+                        INNER JOIN tbl_MachineProductionDTLS MPD ON MPD.ID = MPA.ProductDtlID
+                        INNER JOIN tbl_MachineProductionHDR MPH ON MPH.ID = MPD.HeaderID
+                        LEFT JOIN tbl_MachineMaster MM ON MPA.MachineID = MM.ID  
+                        WHERE MPH.WorkOrderID = @DetailedID AND MM.AllocatedStage = 'Stage 1'";
                     using (SqlCommand cmd = new SqlCommand(updateDateQuery, con))
                     {
                         cmd.Parameters.AddWithValue("@DetailedID", workOrderId);
@@ -661,22 +654,16 @@ public partial class WoProductionS1 : System.Web.UI.Page
                 else
                 {
                     string updateHeaderQuery = @"UPDATE tbl_MachineProductionHDR SET S1Status = @S1Status 
-                WHERE WorkOrderID =  @DetailedId";
-
+                                  WHERE WorkOrderID = @DetailedId";
                     using (SqlCommand cmupdateHeaderQueryd = new SqlCommand(updateHeaderQuery, con))
                     {
                         cmupdateHeaderQueryd.Parameters.AddWithValue("@DetailedId", workOrderId);
-                        if (totalCompletedQty == 0)
-                        {
-                            cmupdateHeaderQueryd.Parameters.AddWithValue("@S1Status", "Machine Allocated");
-                        }
-                        else
-                        {
-                            cmupdateHeaderQueryd.Parameters.AddWithValue("@S1Status", "Partially Completed");
-                        }
+                        cmupdateHeaderQueryd.Parameters.AddWithValue("@S1Status",
+                            totalCompletedQty == 0 ? "Machine Allocated" : "Partially Completed");
                         cmupdateHeaderQueryd.ExecuteNonQuery();
                     }
                 }
+
                 #endregion
 
                 return new
